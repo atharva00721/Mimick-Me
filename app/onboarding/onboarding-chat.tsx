@@ -53,6 +53,8 @@ export function OnboardingChat() {
   const [selectedProjects, setSelectedProjects] = useState<{ title: string; description: string }[]>([]);
   const [handleValue, setHandleValue] = useState("");
   const [selectedFAQs, setSelectedFAQs] = useState<string[]>([]);
+  const isBusy = status === "submitted" || status === "streaming";
+  const hasUserMessage = messages.some((message) => String(message.role) === "user");
 
   const handleResumeUpload = async (file: File) => {
     if (file.type !== "application/pdf") {
@@ -97,7 +99,7 @@ export function OnboardingChat() {
   const handleLocalSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     const text = input.trim();
-    if (status === "streaming") return;
+    if (status === "submitted" || status === "streaming") return;
 
     // If no text AND no resume, do nothing
     if (!text && !resumeUrl) return;
@@ -173,12 +175,31 @@ export function OnboardingChat() {
 
   return (
     <div className="fixed inset-0 flex flex-col bg-background">
-      <header className="flex shrink-0 items-center justify-center border-b px-4 py-3">
-        <h1 className="text-lg">Mimick.me — Set up your portfolio</h1>
+      <header className="shrink-0 border-b bg-background/95 px-4 py-4 backdrop-blur">
+        <div className="mx-auto flex max-w-4xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">Mimick.me setup</p>
+            <h1 className="text-xl font-semibold tracking-tight">Build your portfolio and agent</h1>
+            <p className="text-sm text-muted-foreground">Answer a few prompts, import a site, or upload a PDF resume.</p>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {["Path", "Details", "Review"].map((step, index) => {
+              const isActive = previewData ? index === 2 : hasUserMessage ? index === 1 : index === 0;
+              return (
+                <div key={step} className="flex items-center gap-2">
+                  <span className={cn("rounded-full border px-2.5 py-1", isActive && "border-primary bg-primary text-primary-foreground")}>
+                    {step}
+                  </span>
+                  {index < 2 ? <span className="h-px w-5 bg-border" /> : null}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </header>
       {error && <div className="bg-destructive/10 text-destructive px-4 py-2 text-sm">{error.message}</div>}
 
-      <div className="relative md:mx-80 flex flex-1 flex-col overflow-hidden min-h-0">
+      <div className="relative mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col overflow-hidden">
         <Conversation className="flex-1 min-h-0">
           <ConversationContent className={cn("gap-4 p-4", previewData ? "pb-4" : asksConfirm ? "pb-32" : "pb-24")} scrollClassName="[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {messages.length === 0 ? (
@@ -218,22 +239,42 @@ export function OnboardingChat() {
               <OnboardingPreviewCard data={previewData} onConfirm={handleConfirm} onEdit={() => document.getElementById("onboarding-edit-input")?.focus()} isConfirming={isConfirming} />
               <form onSubmit={handleLocalSubmit}>
                 <InputGroup className="max-w-3xl">
-                  <InputGroupInput id="onboarding-edit-input" value={input} onChange={(e) => setInput(e.target.value)} placeholder="What would you like to change? (e.g. shorten the bio, change title to Senior Developer)" disabled={status === "streaming"} className="text-base" />
-                  <InputGroupAddon align="inline-end"><InputGroupButton type="submit" variant="default" size="icon-sm" disabled={!input.trim() || status === "streaming"}><ArrowUpIcon className="size-4" /></InputGroupButton></InputGroupAddon>
+                  <InputGroupInput id="onboarding-edit-input" value={input} onChange={(e) => setInput(e.target.value)} placeholder="What would you like to change? (e.g. shorten the bio, change title to Senior Developer)" disabled={isBusy} className="text-base" />
+                  <InputGroupAddon align="inline-end"><InputGroupButton type="submit" variant="default" size="icon-sm" disabled={!input.trim() || isBusy}><ArrowUpIcon className="size-4" /></InputGroupButton></InputGroupAddon>
                 </InputGroup>
               </form>
             </div>
           </div>
         ) : (
           <div className="shrink-0 p-4 space-y-2 border-t">
-            {stuckAfterConfirm && status !== "streaming" && (
+            {!hasUserMessage && (
+              <div className="mx-auto grid max-w-3xl gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                <Button type="button" variant="secondary" className="h-auto justify-start rounded-2xl px-4 py-3 text-left" onClick={() => sendMessage({ text: "I already have a website" })} disabled={isBusy}>
+                  <span>
+                    <span className="block font-medium">Import my website</span>
+                    <span className="block text-xs font-normal text-muted-foreground">Use your existing site to configure the agent.</span>
+                  </span>
+                </Button>
+                <Button type="button" variant="secondary" className="h-auto justify-start rounded-2xl px-4 py-3 text-left" onClick={() => sendMessage({ text: "Build me a portfolio + agent" })} disabled={isBusy}>
+                  <span>
+                    <span className="block font-medium">Build from scratch</span>
+                    <span className="block text-xs font-normal text-muted-foreground">Create the portfolio and agent together.</span>
+                  </span>
+                </Button>
+                <Button type="button" variant="outline" className="h-auto rounded-2xl px-4 py-3" onClick={() => setShowUpload(true)} disabled={isBusy || isUploadingResume}>
+                  <Paperclip className="mr-2 size-4" />
+                  Upload PDF
+                </Button>
+              </div>
+            )}
+            {stuckAfterConfirm && !isBusy && (
               <div className="mx-auto flex max-w-3xl justify-center">
                 <Button type="button" variant="secondary" size="sm" className="rounded-full" onClick={refreshDraftFromServer}>
                   Show preview
                 </Button>
               </div>
             )}
-            {asksConfirm && status !== "streaming" && !stuckAfterConfirm && (
+            {asksConfirm && !isBusy && !stuckAfterConfirm && (
               <div className="mx-auto flex max-w-3xl justify-center gap-2">
                 <Button type="button" variant="secondary" size="sm" className="rounded-full" onClick={() => sendMessage({ text: "Yes, looks good!" })}>Yes, looks good</Button>
                 <Button type="button" variant="outline" size="sm" className="rounded-full" onClick={() => sendMessage({ text: "No, let me change that" })}>No, let me change</Button>
@@ -267,7 +308,7 @@ export function OnboardingChat() {
                       const file = e.target.files?.[0];
                       if (file) handleResumeUpload(file);
                     }}
-                    disabled={status === "streaming" || isUploadingResume}
+                    disabled={isBusy || isUploadingResume}
                   />
                 </div>
               )}
@@ -293,13 +334,13 @@ export function OnboardingChat() {
                     className="text-muted-foreground"
                     onClick={() => setShowUpload(prev => !prev)}
                     title="Upload Resume PDF for autofill"
-                    disabled={shouldShowAnyEnhancedUI}
+                    disabled={isBusy || isUploadingResume}
                   >
                     <Paperclip className="size-4" />
                   </InputGroupButton>
                 </InputGroupAddon>
-                <InputGroupInput value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type your message or upload a resume..." disabled={status === "streaming" || shouldShowAnyEnhancedUI} className="text-base md:text-base pl-1" />
-                <InputGroupAddon align="inline-end"><InputGroupButton type="submit" variant="default" size="icon-sm" disabled={(!input.trim() && !resumeUrl) || status === "streaming" || shouldShowAnyEnhancedUI}><ArrowUpIcon className="size-4" /></InputGroupButton></InputGroupAddon>
+                <InputGroupInput value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type your message or upload a resume..." disabled={isBusy || shouldShowAnyEnhancedUI} className="text-base md:text-base pl-1" />
+                <InputGroupAddon align="inline-end"><InputGroupButton type="submit" variant="default" size="icon-sm" disabled={(!input.trim() && !resumeUrl) || isBusy || shouldShowAnyEnhancedUI}><ArrowUpIcon className="size-4" /></InputGroupButton></InputGroupAddon>
               </InputGroup>
             </form>
           </div>

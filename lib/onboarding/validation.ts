@@ -258,7 +258,6 @@ export function validateFinalOnboardingState(state: Partial<OnboardingData> | un
     "title",
     "bio",
     "sections",
-    "services",
     "tone",
     "handle",
   ];
@@ -287,10 +286,22 @@ export function validateFinalOnboardingState(state: Partial<OnboardingData> | un
     }
   }
 
+  const visibleSections = stateWithSections.selectedSections!;
+  const normalizedServices =
+    visibleSections.services && Array.isArray(stateWithSections.services)
+      ? stateWithSections.services
+      : [];
+  const normalizedProjects =
+    visibleSections.projects && Array.isArray(stateWithSections.projects)
+      ? stateWithSections.projects
+      : [];
+
   return {
     ok: true,
     value: {
-      ...(state as OnboardingData),
+      ...(stateWithSections as OnboardingData),
+      services: normalizedServices,
+      projects: normalizedProjects,
       sections: mergeVisibleSections(stateWithSections.sections, getDefaultVisibleSections()),
     },
   };

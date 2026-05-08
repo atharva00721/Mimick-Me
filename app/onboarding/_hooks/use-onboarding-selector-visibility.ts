@@ -28,8 +28,14 @@ export function useOnboardingSelectorVisibility(messages: OnboardingChatMessageL
 
     const text = getAssistantMessageText(last);
     if (!text.trim()) return null;
+    const hasUserMessage = messages.some((message) => message.role === "user");
 
-    if (text.includes("how would you like to get started") || text.includes("already have a website") || text.includes("build me a portfolio")) {
+    if (
+      hasUserMessage &&
+      (text.includes("how would you like to get started") ||
+        text.includes("already have a website") ||
+        text.includes("build me a portfolio"))
+    ) {
       return "setup" as const;
     }
 

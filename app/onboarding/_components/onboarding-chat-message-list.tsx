@@ -42,6 +42,8 @@ type Props = {
 };
 
 export function OnboardingChatMessageList({ messages, status, ...props }: Props) {
+  const isBusy = status === "submitted" || status === "streaming";
+
   return (
     <>
       {messages.map((message) => (
@@ -54,7 +56,7 @@ export function OnboardingChatMessageList({ messages, status, ...props }: Props)
         />
       ))}
 
-      {status === "streaming" && (() => {
+      {isBusy && (() => {
         const last = messages[messages.length - 1];
         const hasText =
           last?.role === "assistant" &&

@@ -14,20 +14,27 @@ interface AgentTestTabProps {
   isChatLoading: boolean;
   clearChatMessages: () => void;
   setChatInput: (value: string) => void;
-  sendTestMessage: () => void;
+  sendTestMessage: (e: React.FormEvent<HTMLFormElement>) => void;
   isAgentEnabled: boolean;
 }
 
 export function AgentTestTab({ canTest, chatMessages, chatInput, isChatLoading, clearChatMessages, setChatInput, sendTestMessage, isAgentEnabled }: AgentTestTabProps) {
   return (
     <div className="pt-5">
-      <Card className="overflow-hidden flex flex-col h-[600px]">
-        <div className="border-b border-border px-6 py-4 flex items-center justify-between bg-muted/50 shrink-0">
-          <div><h3 className="text-base">Test Agent</h3><p className="text-xs text-muted-foreground mt-0.5">Live preview that sends real requests to your configured agent.</p></div>
-          {chatMessages.length > 0 && <Button size="sm" variant="ghost" onClick={clearChatMessages} className="font-medium">Reset</Button>}
+      <Card className="overflow-hidden flex flex-col h-[700px] shadow-lg border-primary/10">
+        <div className="border-b border-border px-6 py-4 flex items-center justify-between bg-muted/30 shrink-0">
+          <div>
+            <h3 className="text-base font-semibold">Test Agent</h3>
+            <p className="text-xs text-muted-foreground mt-0.5 font-medium">Live preview that sends real requests to your configured agent.</p>
+          </div>
+          {chatMessages.length > 0 && (
+            <Button size="sm" variant="ghost" onClick={clearChatMessages} className="font-medium hover:bg-destructive/10 hover:text-destructive">
+              Reset Conversation
+            </Button>
+          )}
         </div>
 
-        <Conversation className="flex-1 min-h-0 border-t-0 bg-background">
+        <Conversation className="flex-1 min-h-0 border-t-0 bg-background/50 backdrop-blur-sm">
           <ConversationContent className="gap-4 p-6" scrollClassName="[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40 [&::-webkit-scrollbar-thumb]:rounded-full">
             {!canTest ? (
               <ConversationEmptyState icon={<AlertCircle className="size-12 text-muted-foreground/50" />} title="Agent Unavailable" description={!isAgentEnabled ? "Enable the agent to test it." : "Generate your portfolio content first to test it."} />
@@ -45,19 +52,29 @@ export function AgentTestTab({ canTest, chatMessages, chatInput, isChatLoading, 
           <ConversationScrollButton />
         </Conversation>
 
-        <form onSubmit={(event) => { event.preventDefault(); sendTestMessage(); }} className="shrink-0 border-t border-border p-4 bg-background">
-          <InputGroup className="shadow-sm">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (canTest && chatInput.trim() && !isChatLoading) {
+              sendTestMessage(event);
+            }
+          }}
+          className="shrink-0 border-t border-border p-4 bg-background"
+        >
+          <InputGroup className="shadow-md border-primary/20 focus-within:border-primary/40 transition-colors rounded-xl overflow-hidden">
             <InputGroupTextarea
               placeholder={canTest ? "Ask something as a visitor..." : "Agent unavailable"}
-              className="min-h-[48px] max-h-32 text-sm border-0 focus-visible:ring-0"
+              className="min-h-[56px] max-h-32 text-sm border-0 focus-visible:ring-0 bg-transparent py-4"
               rows={1}
               value={chatInput}
-              onChange={(event) => setChatInput(event.target.value)}
+              onChange={(e) => setChatInput(e.target.value)}
               disabled={!canTest || isChatLoading}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  if (canTest && chatInput.trim() && !isChatLoading) sendTestMessage();
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  if (canTest && chatInput.trim() && !isChatLoading) {
+                    sendTestMessage(e as any);
+                  }
                 }
               }}
             />

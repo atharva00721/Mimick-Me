@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/api/route-helpers";
-import { getPortfolioUploadUrl } from "@/lib/storage/s3";
+import { getPortfolioUploadUrl } from "@/lib/storage/blob";
 
 const ALLOWED_MIME_TYPES = new Set([
     "image/jpeg",

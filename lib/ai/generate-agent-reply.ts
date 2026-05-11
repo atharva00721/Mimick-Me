@@ -82,231 +82,185 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
       { role: "user", content: input.message },
     ];
 
-    let text = "";
-    let totalTokens = 0;
+    const result = await generateText({
+      model: resolveChatModel(input.model),
+      system: buildPrompt(input, preparedContext),
+      messages,
+      temperature: input.temperature,
+      maxOutputTokens: 1500,
+      // @ts-expect-error - AI SDK version mismatch
+      maxSteps: 5,
+      tools: {
+        ...(calendarEnabled ? {
+          check_availability: tool({
+            description: "CRITICAL: ONLY call this tool if the user explicitly provided a day, date, or relative time (like 'tomorrow'). NEVER call this tool if you don't know the exact date they want. If they just ask 'when are you free?', DO NOT call this tool — instead, ask them what day they prefer.",
+            inputSchema: z.object({
+              date: z.string().describe("The date to check in YYYY-MM-DD format, e.g., 2024-02-28."),
+            }),
+            execute: async (args: any) => {
+              const { date } = args;
+              console.log(`[tool:check_availability] CALLED with RAW ARGS:`, JSON.stringify(args));
+              if (!date || date.trim() === "") {
+                console.warn("[tool:check_availability] Called with no date.");
+                return "SYSTEM MESSAGE: You called check_availability without a date. Please output the following message to the user: 'I need to know which date you want to check before I can look at the calendar. Could you provide a specific day or date?'";
+              }
+              const toolStart = Date.now();
+              try {
+                // Use token pre-fetched before generateText — no DB query here
+                if (!resolvedCalendarToken) {
+                  console.warn("[tool:check_availability] No calendar token available");
+                  return { error: "Calendar integration is not enabled or not authorized." };
+                }
 
-    for (let currentStep = 0; currentStep < 5; currentStep++) {
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("AI generation timed out after 60 seconds")), 60000);
-      });
+                const accessToken = resolvedCalendarToken;
 
-      const result = await Promise.race([
-        generateText({
-          model: resolveChatModel(input.model),
-          system: buildPrompt(input, preparedContext),
-          messages,
-          temperature: input.temperature,
-          maxOutputTokens: 1500,
-          tools: {
-            ...(calendarEnabled ? {
-              check_availability: tool({
-                description: "CRITICAL: ONLY call this tool if the user explicitly provided a day, date, or relative time (like 'tomorrow'). NEVER call this tool if you don't know the exact date they want. If they just ask 'when are you free?', DO NOT call this tool — instead, ask them what day they prefer.",
-                inputSchema: z.object({
-                  date: z.string().describe("The date to check in YYYY-MM-DD format, e.g., 2024-02-28."),
-                }),
-                execute: async (args: any) => {
-                  const { date } = args;
-                  console.log(`[tool:check_availability] CALLED with RAW ARGS:`, JSON.stringify(args));
-                  if (!date || date.trim() === "") {
-                    console.warn("[tool:check_availability] Called with no date.");
-                    return "SYSTEM MESSAGE: You called check_availability without a date. Please output the following message to the user: 'I need to know which date you want to check before I can look at the calendar. Could you provide a specific day or date?'";
+                let targetDate = new Date();
+                if (date === "tomorrow") {
+                  targetDate.setDate(targetDate.getDate() + 1);
+                } else if (date !== "today" && date !== "today's") {
+                  const parsed = new Date(date);
+                  if (!isNaN(parsed.getTime())) {
+                    targetDate = parsed;
                   }
-                  const toolStart = Date.now();
-                  try {
-                    // Use token pre-fetched before generateText — no DB query here
-                    if (!resolvedCalendarToken) {
-                      console.warn("[tool:check_availability] No calendar token available");
-                      return { error: "Calendar integration is not enabled or not authorized." };
-                    }
+                }
+                const targetDayOfWeek = targetDate.getDay();
+                const dateStr = targetDate.toISOString().split("T")[0];
 
-                    const accessToken = resolvedCalendarToken;
-
-                    let targetDate = new Date();
-                    if (date === "tomorrow") {
-                      targetDate.setDate(targetDate.getDate() + 1);
-                    } else if (date !== "today" && date !== "today's") {
-                      const parsed = new Date(date);
-                      if (!isNaN(parsed.getTime())) {
-                        targetDate = parsed;
-                      }
-                    }
-                    const targetDayOfWeek = targetDate.getDay();
-                    const dateStr = targetDate.toISOString().split("T")[0];
-
-                    const offDays = input.offDays || [];
-                    if (offDays.includes(dateStr)) {
-                      console.log(`[tool:check_availability] Agent is off on ${dateStr}`);
-                      return {
-                        date: dateStr,
-                        availability: "Unavailable. The agent is marked as off on this specific date.",
-                        busy_slots: [],
-                        summary: "Agent is off on this date."
-                      };
-                    }
-
-                    const wh = (input.workingHours || []).find(w => w.dayOfWeek === targetDayOfWeek);
-                    if (wh && !wh.enabled) {
-                      const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-                      console.log(`[tool:check_availability] Agent is closed on ${days[targetDayOfWeek]}s`);
-                      return {
-                        date: dateStr,
-                        availability: `Unavailable. The agent is closed on ${days[targetDayOfWeek]}s.`,
-                        busy_slots: [],
-                        summary: "Agent is closed on this day of the week."
-                      };
-                    }
-
-                    const timeMin = new Date(targetDate);
-                    timeMin.setHours(0, 0, 0, 0);
-                    const timeMax = new Date(targetDate);
-                    timeMax.setHours(23, 59, 59, 999);
-
-                    console.log(`[tool:check_availability] Fetching events for ${dateStr}...`);
-                    const events = await getCalendarEvents(
-                      accessToken,
-                      timeMin.toISOString(),
-                      timeMax.toISOString()
-                    );
-
-                    if (!events || !events.items || events.items.length === 0) {
-                      console.log(`[tool:check_availability] SUCCESS for ${dateStr} (0 events)`);
-                      return {
-                        date: dateStr,
-                        availability: "Fully available. No events scheduled.",
-                        busy_slots: [],
-                        summary: "No events scheduled for this day."
-                      };
-                    }
-
-                    const busySlots = events.items.map((event: any) => {
-                      const startStr = event.start?.dateTime || event.start?.date;
-                      const endStr = event.end?.dateTime || event.end?.date;
-                      const start = startStr ? new Date(startStr) : null;
-                      const end = endStr ? new Date(endStr) : null;
-
-                      const isAllDay = !event.start?.dateTime;
-                      const timeStr = (start && end && !isAllDay)
-                        ? `${start.toTimeString().slice(0, 5)} - ${end.toTimeString().slice(0, 5)}`
-                        : "All day";
-
-                      return `${timeStr}: ${event.summary || "Busy"}`;
-                    });
-
-                    console.log(`[tool:check_availability] SUCCESS for ${dateStr} (${busySlots.length} events) in ${Date.now() - toolStart}ms`);
-                    return {
-                      date: dateStr,
-                      busy_slots: busySlots,
-                      summary: `There are ${events.items.length} events scheduled on this day.`,
-                      availability: busySlots.length > 0 ? "Partially busy." : "Available."
-                    };
-                  } catch (error: any) {
-                    console.error(`[tool:check_availability] CRITICAL ERROR in ${Date.now() - toolStart}ms:`, error);
-                    return { error: `An error occurred while checking availability: ${error.message || "Unknown error"}` };
-                  }
-                },
-              }),
-            } : {}),
-
-            ...(calendlyEnabled ? {
-              get_calendly_link: tool({
-                description: "Get the visitor's custom Calendly booking link. ONLY call this if the visitor specifically asks for a link, wants to 'book a meeting', 'schedule time', or 'see your calendar'. NEVER call this tool if Calendly is not enabled.",
-                inputSchema: z.object({}),
-                execute: async () => {
-                  console.log(`[tool:get_calendly_link] CALLED`);
+                const offDays = input.offDays || [];
+                if (offDays.includes(dateStr)) {
+                  console.log(`[tool:check_availability] Agent is off on ${dateStr}`);
                   return {
-                    booking_url: input.calendlySchedulingUrl,
-                    instructions: "Share this link with the visitor so they can choose a time that works for them."
+                    date: dateStr,
+                    availability: "Unavailable. The agent is marked as off on this specific date.",
+                    busy_slots: [],
+                    summary: "Agent is off on this date."
                   };
-                },
-              }),
-            } : {}),
+                }
 
-            get_current_datetime: tool({
-              description: "Get the current date and time. Use this when the visitor asks what time or date it is, or when you need to know the current moment to give a relevant answer.",
-              inputSchema: z.object({}),
-              execute: async () => {
-                const now = new Date();
-                console.log(`[tool:get_current_datetime] CALLED`);
-                return {
-                  iso: now.toISOString(),
-                  date: now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
-                  time: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
-                  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                };
-              },
-            }),
+                const wh = (input.workingHours || []).find(w => w.dayOfWeek === targetDayOfWeek);
+                if (wh && !wh.enabled) {
+                  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+                  console.log(`[tool:check_availability] Agent is closed on ${days[targetDayOfWeek]}s`);
+                  return {
+                    date: dateStr,
+                    availability: `Unavailable. The agent is closed on ${days[targetDayOfWeek]}s.`,
+                    busy_slots: [],
+                    summary: "Agent is closed on this day of the week."
+                  };
+                }
 
-            get_current_date: tool({
-              description: "Get today's date. Use this when the visitor asks what day or date it is.",
-              inputSchema: z.object({}),
-              execute: async () => {
-                const now = new Date();
-                console.log(`[tool:get_current_date] CALLED`);
-                return {
-                  iso: now.toISOString().split("T")[0],
-                  friendly: now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
-                  day_of_week: now.toLocaleDateString("en-US", { weekday: "long" }),
-                };
-              },
-            }),
+                const timeMin = new Date(targetDate);
+                timeMin.setHours(0, 0, 0, 0);
+                const timeMax = new Date(targetDate);
+                timeMax.setHours(23, 59, 59, 999);
 
-            get_current_time: tool({
-              description: "Get the current time. Use this when the visitor asks what time it is.",
-              inputSchema: z.object({}),
-              execute: async () => {
-                const now = new Date();
-                console.log(`[tool:get_current_time] CALLED`);
+                console.log(`[tool:check_availability] Fetching events for ${dateStr}...`);
+                const events = await getCalendarEvents(
+                  accessToken,
+                  timeMin.toISOString(),
+                  timeMax.toISOString()
+                );
+
+                if (!events || !events.items || events.items.length === 0) {
+                  console.log(`[tool:check_availability] SUCCESS for ${dateStr} (0 events)`);
+                  return {
+                    date: dateStr,
+                    availability: "Fully available. No events scheduled.",
+                    busy_slots: [],
+                    summary: "No events scheduled for this day."
+                  };
+                }
+
+                const busySlots = events.items.map((event: any) => {
+                  const startStr = event.start?.dateTime || event.start?.date;
+                  const endStr = event.end?.dateTime || event.end?.date;
+                  const start = startStr ? new Date(startStr) : null;
+                  const end = endStr ? new Date(endStr) : null;
+
+                  const isAllDay = !event.start?.dateTime;
+                  const timeStr = (start && end && !isAllDay)
+                    ? `${start.toTimeString().slice(0, 5)} - ${end.toTimeString().slice(0, 5)}`
+                    : "All day";
+
+                  return `${timeStr}: ${event.summary || "Busy"}`;
+                });
+
+                console.log(`[tool:check_availability] SUCCESS for ${dateStr} (${busySlots.length} events) in ${Date.now() - toolStart}ms`);
                 return {
-                  time_24h: now.toTimeString().slice(0, 5),
-                  time_12h: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
-                  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                  date: dateStr,
+                  busy_slots: busySlots,
+                  summary: `There are ${events.items.length} events scheduled on this day.`,
+                  availability: busySlots.length > 0 ? "Partially busy." : "Available."
                 };
-              },
-            }),
+              } catch (error: any) {
+                console.error(`[tool:check_availability] CRITICAL ERROR in ${Date.now() - toolStart}ms:`, error);
+                return { error: `An error occurred while checking availability: ${error.message || "Unknown error"}` };
+              }
+            },
+          }),
+        } : {}),
+
+        ...(calendlyEnabled ? {
+          get_calendly_link: tool({
+            description: "Get the visitor's custom Calendly booking link. ONLY call this if the visitor specifically asks for a link, wants to 'book a meeting', 'schedule time', or 'see your calendar'. NEVER call this tool if Calendly is not enabled.",
+            inputSchema: z.object({}),
+            execute: async () => {
+              console.log(`[tool:get_calendly_link] CALLED`);
+              return {
+                booking_url: input.calendlySchedulingUrl,
+                instructions: "Share this link with the visitor so they can choose a time that works for them."
+              };
+            },
+          }),
+        } : {}),
+
+        get_current_datetime: tool({
+          description: "Get the current date and time. Use this when the visitor asks what time or date it is, or when you need to know the current moment to give a relevant answer.",
+          inputSchema: z.object({}),
+          execute: async () => {
+            const now = new Date();
+            console.log(`[tool:get_current_datetime] CALLED`);
+            return {
+              iso: now.toISOString(),
+              date: now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
+              time: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            };
           },
         }),
-        timeoutPromise
-      ]);
 
-      if (!result) {
-        throw new Error("generateText returned undefined result");
-      }
+        get_current_date: tool({
+          description: "Get today's date. Use this when the visitor asks what day or date it is.",
+          inputSchema: z.object({}),
+          execute: async () => {
+            const now = new Date();
+            console.log(`[tool:get_current_date] CALLED`);
+            return {
+              iso: now.toISOString().split("T")[0],
+              friendly: now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
+              day_of_week: now.toLocaleDateString("en-US", { weekday: "long" }),
+            };
+          },
+        }),
 
-      const usage = (result as any).usage;
-      totalTokens += usage?.totalTokens ?? ((usage?.inputTokens ?? 0) + (usage?.outputTokens ?? 0));
+        get_current_time: tool({
+          description: "Get the current time. Use this when the visitor asks what time it is.",
+          inputSchema: z.object({}),
+          execute: async () => {
+            const now = new Date();
+            console.log(`[tool:get_current_time] CALLED`);
+            return {
+              time_24h: now.toTimeString().slice(0, 5),
+              time_12h: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            };
+          },
+        }),
+      },
+    });
 
-      const toolCalls = (result as any).toolCalls;
-
-      if (toolCalls && toolCalls.length > 0) {
-        if ((result as any).response?.messages) {
-          messages.push(...(result as any).response.messages);
-        } else {
-          // Fallback if response.messages is somehow missing
-          const toolCallParts = toolCalls.map((tc: any) => ({
-            type: 'tool-call',
-            toolCallId: tc.toolCallId,
-            toolName: tc.toolName,
-            args: tc.args
-          }));
-          messages.push({
-            role: 'assistant',
-            content: (result as any).text ? [{ type: 'text', text: (result as any).text }, ...toolCallParts] : toolCallParts
-          });
-          const toolResults = (result as any).toolResults || [];
-          const toolResultParts = toolResults.map((tr: any) => ({
-            type: 'tool-result',
-            toolCallId: tr.toolCallId,
-            toolName: tr.toolName,
-            result: tr.result !== undefined ? tr.result : "Success"
-          }));
-          messages.push({ role: 'tool', content: toolResultParts });
-        }
-        continue; // Process next step
-      }
-
-      text = (result as any).text || "";
-      break;
-    }
+    const totalTokens = result.usage?.totalTokens ?? ((result.usage?.inputTokens ?? 0) + (result.usage?.outputTokens ?? 0));
+    const text = result.text || "";
 
     console.log(`[requestReply] SUCCESS for agent: ${input.agentId} in ${Date.now() - startTime}ms. Tokens: ${totalTokens}`);
     console.log(`[requestReply] RAW TEXT returned from model (length: ${text.length}):\n${text}`);

@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/server";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { s3Client } from "@/lib/storage/s3";
-
-const BUCKET_NAME = process.env.S3_BUCKET_NAME || "";
-const S3_REGION = process.env.S3_REGION || "us-east-1";
-const S3_PUBLIC_URL = process.env.S3_PUBLIC_URL;
+import { put } from "@vercel/blob";
 
 export const maxDuration = 30;
 
@@ -40,25 +35,16 @@ export async function POST(request: Request) {
     const key = `knowledge/onboarding-${session.user.id}/${Date.now()}-${file.name}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    await s3Client.send(
-      new PutObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: key,
-        Body: buffer,
-        ContentType: file.type,
-        ContentLength: buffer.length,
-      })
-    );
+    const { url } = await put(key, buffer, {
+      access: "public",
+      contentType: file.type,
+    });
 
-    const publicUrl = S3_PUBLIC_URL
-      ? `${S3_PUBLIC_URL}/${key}`
-      : `https://${BUCKET_NAME}.s3.${S3_REGION}.amazonaws.com/${key}`;
+    console.log(`[resume-upload] Uploaded to Vercel Blob: ${key} (${buffer.length} bytes)`);
 
-    console.log(`[resume-upload] Uploaded to S3: ${key} (${buffer.length} bytes)`);
-
-    return NextResponse.json({ key, publicUrl });
+    return NextResponse.json({ key: url, publicUrl: url });
   } catch (error) {
-    console.error("[resume-upload] S3 upload failed:", error);
-    return NextResponse.json({ error: "Upload to S3 failed" }, { status: 500 });
+    console.error("[resume-upload] Vercel Blob upload failed:", error);
+    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }

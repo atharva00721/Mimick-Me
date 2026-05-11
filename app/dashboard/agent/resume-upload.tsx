@@ -5,6 +5,7 @@ import { Upload, FileText, Loader2, X, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { upload } from "@vercel/blob/client";
 
 interface ResumeUploadProps {
   agentId: string | null;
@@ -40,39 +41,12 @@ export function ResumeUpload({ agentId }: ResumeUploadProps) {
     setUploadProgress(0);
 
     try {
-      const uploadUrlResponse = await fetch(
-        `/api/knowledge/upload?fileName=${encodeURIComponent(selectedFile.name)}&mimeType=${encodeURIComponent(selectedFile.type)}`,
-        { method: "POST" }
-      );
-
-      if (!uploadUrlResponse.ok) {
-        const errorData = await uploadUrlResponse.json();
-        throw new Error(errorData.error || "Failed to get upload URL");
-      }
-
-      const { uploadUrl, publicUrl } = await uploadUrlResponse.json();
-
-      await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("PUT", uploadUrl);
-        xhr.setRequestHeader("Content-Type", selectedFile.type);
-
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const progress = Math.round((event.loaded / event.total) * 100);
-            setUploadProgress(progress);
-          }
-        };
-
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve();
-          } else {
-            reject(new Error(`Upload failed (${xhr.status})`));
-          }
-        };
-        xhr.onerror = () => reject(new Error("Network error"));
-        xhr.send(selectedFile);
+      const blob = await upload(`knowledge/${agentId}/${selectedFile.name}`, selectedFile, {
+        access: "public",
+        handleUploadUrl: "/api/upload/blob",
+        onUploadProgress: (progress) => {
+          setUploadProgress(progress.percentage);
+        },
       });
 
       const knowledgeResponse = await fetch("/api/knowledge", {
@@ -80,7 +54,7 @@ export function ResumeUpload({ agentId }: ResumeUploadProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: selectedFile.name.replace(".pdf", ""),
-          fileUrl: publicUrl,
+          fileUrl: blob.url,
           mimeType: selectedFile.type,
           fileSize: selectedFile.size,
           type: "pdf",

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/api/route-helpers";
 import { getUserAgent } from "@/lib/db/knowledge";
-import { getUploadUrl, MAX_FILE_SIZE } from "@/lib/storage/s3";
+import { getUploadUrl, MAX_FILE_SIZE } from "@/lib/storage/blob";
 import { getActivePortfolio } from "@/lib/active-portfolio";
 
 export async function POST(request: Request) {

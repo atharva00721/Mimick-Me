@@ -15,12 +15,8 @@ async function runTest() {
     throw new Error("SPY_TEST_LEAD_EMAIL and SPY_TEST_NOTIFICATION_EMAIL are required.");
   }
 
-  console.log("Testing Lead Enrichment (The Spy)...");
-  console.log(`Enriching data for: ${leadName} <${leadEmail}>`);
   const enrichment = await enrichLeadData(leadEmail, leadName);
-  console.log("Enrichment Result:", JSON.stringify(enrichment, null, 2));
 
-  console.log("\nTesting Mail Sending...");
   await sendLeadNotificationEmail(
     notificationEmail,
     {
@@ -32,7 +28,6 @@ async function runTest() {
     "Manual Test Script",
     enrichment
   );
-  console.log("Mail sent successfully.");
 }
 
 runTest().catch((err) => {

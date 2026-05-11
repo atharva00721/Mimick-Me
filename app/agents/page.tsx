@@ -110,7 +110,7 @@ export default function AgentsPage() {
                         transition={{ duration: 0.5, delay: 0.2 }}
                         className="mt-6 text-lg leading-relaxed text-muted-foreground text-balance max-w-2xl mx-auto"
                     >
-                        A Mimick.me agent isn't a template chatbot — it's a bespoke AI trained on your expertise, shaped to your personality, and designed to qualify the leads that matter.
+                        A Mimick.me agent isn&apos;t a template chatbot — it&apos;s a bespoke AI trained on your expertise, shaped to your personality, and designed to qualify the leads that matter.
                     </motion.p>
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -191,7 +191,7 @@ export default function AgentsPage() {
                             Built for every independent professional
                         </h2>
                         <p className="mt-4 text-muted-foreground text-base leading-relaxed">
-                            Whether you're a solo freelancer or running a boutique agency, there's a Mimick.me agent that fits how you work.
+                            Whether you&apos;re a solo freelancer or running a boutique agency, there&apos;s a Mimick.me agent that fits how you work.
                         </p>
                     </motion.div>
 
@@ -247,7 +247,7 @@ export default function AgentsPage() {
                                         Every answer grounded in your expertise
                                     </h2>
                                     <p className="mt-4 text-muted-foreground text-base leading-relaxed">
-                                        Upload your résumé, case studies, and service docs. RAG retrieval ensures your agent only references what you've actually said — accurate, honest, and distinctly you.
+                                        Upload your résumé, case studies, and service docs. RAG retrieval ensures your agent only references what you&apos;ve actually said — accurate, honest, and distinctly you.
                                     </p>
                                 </div>
                                 <div className="flex flex-col gap-4">

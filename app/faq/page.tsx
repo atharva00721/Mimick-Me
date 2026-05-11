@@ -201,7 +201,7 @@ export default function FaqPage() {
                             Still have questions?
                         </h2>
                         <p className="mt-3 text-muted-foreground text-base leading-relaxed max-w-md mx-auto">
-                            Can't find the answer you're looking for? Reach out and we'll get back to you within one business day.
+                            Can&apos;t find the answer you&apos;re looking for? Reach out and we&apos;ll get back to you within one business day.
                         </p>
                         <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
                             <Button asChild size="lg" className="rounded-full px-8 gap-2">

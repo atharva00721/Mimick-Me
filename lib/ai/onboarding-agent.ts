@@ -209,7 +209,7 @@ export async function streamOnboardingChat({
           }
 
           const parsedValue = validation.value;
-          (collected as any)[step] = parsedValue;
+          (collected as Record<string, unknown>)[step] = parsedValue;
           const merged = { ...collected };
 
           try {
@@ -265,11 +265,11 @@ export async function streamOnboardingChat({
           handle: z.string(),
         }),
         execute: async (data) => {
-          if (data.selectedSections && (data.selectedSections as any).hero === "on") {
-            data = { ...data, selectedSections: { ...data.selectedSections!, hero: true } as any };
+          if (data.selectedSections && (data.selectedSections as { hero: string | boolean }).hero === "on") {
+            data = { ...data, selectedSections: { ...data.selectedSections!, hero: true } as { hero: true; about: boolean; services: boolean; projects: boolean; cta: boolean; socials: boolean } };
           }
           console.log("[request_preview] execute called with:", data);
-          const parsed = validateFinalOnboardingState(data as any);
+          const parsed = validateFinalOnboardingState(data as OnboardingData);
           if (!parsed.ok) {
             console.error(
               "[request_preview] validation failed:",

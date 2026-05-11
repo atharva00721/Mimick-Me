@@ -90,8 +90,8 @@ export async function regeneratePortfolio() {
   const { calculateSectionCount } = await import("@/lib/portfolio/section-registry");
 
   const sectionCount = calculateSectionCount(
-    (portfolio.content as any)?.visibleSections,
-    (portfolio.onboardingData as any)?.sections
+    (portfolio.content as { visibleSections?: unknown })?.visibleSections,
+    (portfolio.onboardingData as { sections?: unknown })?.sections
   );
   const creditCost = Math.max(1, sectionCount);
 

@@ -321,7 +321,7 @@ export function StudioTemplate({ content }: { content: PortfolioContent }) {
                       <div>
                         <h4 className="font-bold text-[#1a1a1a] dark:text-white mb-4">Philosophy</h4>
                         <p className="text-sm font-light text-zinc-500 dark:text-zinc-400">
-                          Minimalism is not about nothing, it's about the right amount of everything.
+                          Minimalism is not about nothing, it&apos;s about the right amount of everything.
                         </p>
                       </div>
                     </div>
@@ -345,7 +345,7 @@ export function StudioTemplate({ content }: { content: PortfolioContent }) {
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-16 relative z-10">
                     <div>
                       <h2 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 leading-none">
-                        Let's build<br />something<br /><span className="font-serif italic font-medium opacity-90">iconic.</span>
+                      Let&apos;s build<br />something<br /><span className="font-serif italic font-medium opacity-90">iconic.</span>
                       </h2>
                       <p className="text-lg md:text-xl text-[#d4c3bd] dark:text-[#c4a99d] max-w-sm font-light">
                         {content.cta.subtext}

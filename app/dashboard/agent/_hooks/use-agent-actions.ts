@@ -1,6 +1,7 @@
 import { useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { chatWithAgent } from "../../actions";
+import { useChat } from "@ai-sdk/react";
 
 export function useAgentActions(params: {
   chatInput: string;
@@ -11,8 +12,27 @@ export function useAgentActions(params: {
   addChatMessage: (msg: { role: "user" | "assistant"; content: string }) => void;
   setChatInput: (input: string) => void;
   setIsChatLoading: (loading: boolean) => void;
+  agentId: string | null;
 }) {
   const sessionIdRef = useRef<string | null>(null);
+
+  // @ts-expect-error - AI SDK version mismatch
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+    // @ts-expect-error - AI SDK version mismatch
+    api: "/api/agents/chat",
+    body: {
+      agentId: params.agentId,
+      handle: params.portfolioHandle,
+    },
+    onResponse: (response: Response) => {
+      if (!response.ok) {
+        toast.error("Failed to connect to agent");
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message || "An error occurred");
+    },
+  });
 
   const sendTestMessage = useCallback(async () => {
     const msg = params.chatInput.trim();
@@ -56,5 +76,5 @@ export function useAgentActions(params: {
     }
   }, [params]);
 
-  return { sendTestMessage };
+  return { sendTestMessage, messages, input, handleInputChange, handleSubmit, isLoading };
 }

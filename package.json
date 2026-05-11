@@ -15,10 +15,9 @@
     "evals:agent": "bun scripts/run-agent-evals.ts"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^3.0.30",
-    "@ai-sdk/react": "^3.0.93",
-    "@aws-sdk/client-s3": "^3.997.0",
-    "@aws-sdk/s3-request-presigner": "^3.997.0",
+    "@ai-sdk/openai": "^3.0.63",
+    "@ai-sdk/provider-utils": "^4.0.27",
+    "@ai-sdk/react": "^3.0.179",
     "@base-ui/react": "^1.2.0",
     "@dodopayments/nextjs": "^0.3.4",
     "@radix-ui/react-slot": "^1.2.4",
@@ -29,7 +28,8 @@
     "@tanstack/react-query": "^5.60.0",
     "@upstash/qstash": "^2.9.0",
     "@vercel/analytics": "^1.6.1",
-    "ai": "^6.0.108",
+    "@vercel/blob": "^2.3.3",
+    "ai": "^6.0.177",
     "bcryptjs": "^3.0.2",
     "better-auth": "^1.4.19",
     "class-variance-authority": "^0.7.1",

@@ -176,7 +176,17 @@ export function AgentClient({ agent, agentId, portfolioHandle, hasContent, isPor
     }
   };
 
-  const { sendTestMessage } = useAgentActions({ chatInput, isChatLoading, hasContent, portfolioHandle, chatMessages, addChatMessage, setChatInput, setIsChatLoading });
+  const { sendTestMessage, messages: streamingMessages, input: streamingInput, handleInputChange, handleSubmit, isLoading: isStreamingLoading } = useAgentActions({
+    chatInput,
+    isChatLoading,
+    hasContent,
+    portfolioHandle,
+    chatMessages,
+    addChatMessage,
+    setChatInput,
+    setIsChatLoading,
+    agentId
+  });
 
   const canTest = config.isEnabled && hasContent;
   const canGenerateWidget = Boolean(agentId) && Boolean(appOrigin);
@@ -260,7 +270,19 @@ export function AgentClient({ agent, agentId, portfolioHandle, hasContent, isPor
           if (tab.value === "settings") return <AgentSettingsTab config={config} isPending={isPending} agentId={agentId} onSave={handleSave} setConfig={setConfig} />;
           if (tab.value === "widget") return <AgentWidgetTab canGenerateWidget={canGenerateWidget} isWidgetReady={isWidgetReady} scriptUrl={scriptUrl} scriptSnippet={scriptSnippet} iframeSnippet={iframeSnippet} appOrigin={appOrigin} agentId={agentId} widgetLabel={widgetLabel} widgetPosition={widgetPosition} widgetWidth={widgetWidth} widgetHeight={widgetHeight} widgetColor={widgetColor} widgetStyle={widgetStyle} widgetGreeting={widgetGreeting} widgetShadow={widgetShadow} widgetRadius={widgetRadius} widgetAvatarUrl={config.avatarUrl || ""} widgetProactive={widgetProactive} widgetProactiveDelay={widgetProactiveDelay} widgetIcon={widgetIcon} widgetMobileBehavior={widgetMobileBehavior} widgetFontFamily={widgetFontFamily} setWidgetLabel={setWidgetLabel} setWidgetPosition={setWidgetPosition} setWidgetWidth={setWidgetWidth} setWidgetHeight={setWidgetHeight} setWidgetColor={setWidgetColor} setWidgetStyle={setWidgetStyle} setWidgetGreeting={setWidgetGreeting} setWidgetShadow={setWidgetShadow} setWidgetRadius={setWidgetRadius} setWidgetProactive={setWidgetProactive} setWidgetProactiveDelay={setWidgetProactiveDelay} setWidgetIcon={setWidgetIcon} setWidgetMobileBehavior={setWidgetMobileBehavior} setWidgetFontFamily={setWidgetFontFamily} />;
           if (tab.value === "integrations") return <AgentIntegrationsTab config={config} isDisconnectingCalendar={isDisconnectingCalendar} handleCalendarDisconnect={handleCalendarDisconnect} isDisconnectingCalendly={isDisconnectingCalendly} handleCalendlyDisconnect={handleCalendlyDisconnect} plan={plan} handleToggleSpy={handleToggleSpy} />;
-          if (tab.value === "test") return <AgentTestTab canTest={canTest} chatMessages={chatMessages} chatInput={chatInput} isChatLoading={isChatLoading} clearChatMessages={clearChatMessages} setChatInput={setChatInput} sendTestMessage={sendTestMessage} isAgentEnabled={config.isEnabled} />;
+          if (tab.value === "test") return (
+            <AgentTestTab
+              canTest={canTest}
+              // @ts-expect-error - AI SDK version mismatch
+              chatMessages={streamingMessages.length > 0 ? streamingMessages.map(m => ({ role: m.role as "user" | "assistant", content: m.content })) : chatMessages}
+              chatInput={streamingInput}
+              isChatLoading={isStreamingLoading}
+              clearChatMessages={clearChatMessages}
+              setChatInput={handleInputChange}
+              sendTestMessage={handleSubmit}
+              isAgentEnabled={config.isEnabled}
+            />
+          );
           return null;
         }}
       />

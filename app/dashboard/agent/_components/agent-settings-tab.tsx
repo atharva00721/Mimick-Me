@@ -22,9 +22,9 @@ interface AgentSettingsTabProps {
 
 export function AgentSettingsTab({ config, isPending, agentId, onSave, setConfig }: AgentSettingsTabProps) {
   return (
-    <div className="space-y-6 pt-5">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+    <div className="space-y-8 pt-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <Card className="shadow-sm border-primary/5">
+        <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/20">
           <div>
             <CardTitle className="text-lg">Enable AI Assistant</CardTitle>
             <CardDescription>Responds to visitor questions and captures leads.</CardDescription>
@@ -32,8 +32,8 @@ export function AgentSettingsTab({ config, isPending, agentId, onSave, setConfig
           <Switch checked={config.isEnabled} onCheckedChange={(checked) => setConfig({ isEnabled: checked })} disabled={isPending} />
         </CardHeader>
 
-        <CardContent className={`${config.isEnabled ? "" : "opacity-60 pointer-events-none"} transition-opacity duration-200`}>
-          <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-x-8 gap-y-8">
+        <CardContent className={`${config.isEnabled ? "" : "opacity-60 pointer-events-none"} transition-opacity duration-200 p-8`}>
+          <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-x-12 gap-y-10">
             <div className="space-y-1"><Label className="text-sm font-semibold">AI Model</Label><p className="text-xs text-muted-foreground">Select the underlying model power.</p></div>
             <div>
               <Select value={config.model} onValueChange={(value) => setConfig({ model: value })} disabled={isPending}>
@@ -102,10 +102,13 @@ export function AgentSettingsTab({ config, isPending, agentId, onSave, setConfig
         </CardFooter>
       </Card>
 
-      <Card>
-        <CardHeader><CardTitle className="text-lg">Availability & Business Hours</CardTitle><CardDescription>Configure when the agent can schedule meetings and specific off-days.</CardDescription></CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-x-8 gap-y-8">
+      <Card className="shadow-sm border-primary/5 overflow-hidden">
+        <CardHeader className="border-b bg-muted/20">
+          <CardTitle className="text-lg font-semibold">Availability & Business Hours</CardTitle>
+          <CardDescription>Configure when the agent can schedule meetings and specific off-days.</CardDescription>
+        </CardHeader>
+        <CardContent className="p-8">
+          <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-x-12 gap-y-10">
             <div className="space-y-1"><Label className="text-sm font-semibold">Weekly Availability</Label><p className="text-xs text-muted-foreground">Enable days and set time windows.</p></div>
             <div className="space-y-2">
               {config.workingHours.map((wh, idx) => (

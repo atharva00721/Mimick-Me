@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { onboardingDrafts } from "@/lib/schema";
 import { withDefaultSelectedSections, type OnboardingData } from "@/lib/onboarding/types";
 import type { UIMessage } from "ai";
-import { getFileBuffer, getKeyFromUrl } from "@/lib/storage/s3";
+import { getFileBuffer, getKeyFromUrl } from "@/lib/storage/blob";
 import { extractTextFromPdf } from "@/lib/knowledge/extract-pdf";
 import { consumeCredits, getCredits } from "@/lib/credits";
 

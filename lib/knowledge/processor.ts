@@ -5,7 +5,7 @@ import { extractTextFromPdf } from "@/lib/knowledge/extract-pdf";
 import { generateEmbeddings } from "@/lib/ai/embeddings";
 import { chunkText } from "@/lib/knowledge/chunk-text";
 import { insertKnowledgeChunks, deleteKnowledgeChunksBySourceId } from "@/lib/db/knowledge";
-import { getKeyFromUrl, getFileBuffer } from "@/lib/storage/s3";
+import { getKeyFromUrl, getFileBuffer } from "@/lib/storage/blob";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
 

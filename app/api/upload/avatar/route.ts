@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/api/route-helpers";
-import { getAvatarUploadUrl } from "@/lib/storage/s3";
+import { getAvatarUploadUrl } from "@/lib/storage/blob";
 
 export async function POST(request: Request) {
     const authResult = await requireUserId();

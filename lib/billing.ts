@@ -69,26 +69,20 @@ export async function checkAiMessageLimit(userId: string): Promise<{ allowed: bo
     const start = startOfMonth(now);
     const end = endOfMonth(now);
 
-    // Note: we might need a more resilient query if they have many agents, 
-    // but currently Drizzle doesn't have an `inArray` that works perfectly with `undefined`
-    // We'll iterate for simplicity and accuracy if agent count is small, OR use a raw query
-
-    // Since userAgents length is usually small (1-10), we can just do this:
-    let totalMessages = 0;
-    for (const agentId of agentIds) {
-        const [{ value }] = await db
-            .select({ value: count() })
-            .from(aiTelemetryEvents)
-            .where(
-                and(
-                    eq(aiTelemetryEvents.agentId, agentId),
-                    eq(aiTelemetryEvents.eventType, "chat_message"),
-                    gte(aiTelemetryEvents.createdAt, start),
-                    lte(aiTelemetryEvents.createdAt, end)
-                )
-            );
-        totalMessages += value;
-    }
+    // Optimized: Use a single query with inArray to avoid N+1 problem.
+    // Drizzle's inArray throws if the array is empty, so we check userAgents.length above.
+    const results = await db
+        .select({ value: count() })
+        .from(aiTelemetryEvents)
+        .where(
+            and(
+                inArray(aiTelemetryEvents.agentId, agentIds),
+                eq(aiTelemetryEvents.eventType, "chat_message"),
+                gte(aiTelemetryEvents.createdAt, start),
+                lte(aiTelemetryEvents.createdAt, end)
+            )
+        );
+    const totalMessages = results[0]?.value ?? 0;
 
     return {
         allowed: totalMessages < limit,

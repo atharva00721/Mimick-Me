@@ -9,7 +9,6 @@ import {
   ONBOARDING_STEPS,
   type OnboardingData,
   type OnboardingStep,
-  type OnboardingSelectedSections,
 } from "@/lib/onboarding/types";
 import {
   validateFinalOnboardingState,

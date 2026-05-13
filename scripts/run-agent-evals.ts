@@ -155,7 +155,8 @@ async function main(): Promise<void> {
   }
 
   if (!hasRequiredApiKey(model)) {
-    throw new Error(`Missing API key for model '${model}'.`);
+    console.warn(`⚠️ Skipping evals: Missing API key for model '${model}'.`);
+    return;
   }
 
   console.info(`Running ${fixtures.length} eval fixtures with model ${model}...`);

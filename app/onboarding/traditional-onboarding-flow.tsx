@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState } from "react";
 import { submitOnboardingForm } from "@/app/onboarding/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,8 +70,11 @@ export function TraditionalOnboardingFlow() {
         if (state.projects && Array.isArray(state.projects)) {
           setProjects((prev) => {
             const next = [...prev];
-            state.projects?.forEach((p: any, i: number) => {
-              if (i < 3) next[i] = { title: p.title || "", description: p.description || "" };
+            state.projects?.forEach((p: unknown, i: number) => {
+              if (i < 3 && typeof p === "object" && p !== null) {
+                const project = p as { title?: string; description?: string };
+                next[i] = { title: project.title || "", description: project.description || "" };
+              }
             });
             return next;
           });
@@ -82,7 +85,7 @@ export function TraditionalOnboardingFlow() {
       } else {
         toast.error("No AI chat draft found. Try the AI setup first!");
       }
-    } catch (err) {
+    } catch (_err) {
       toast.error("Failed to fetch AI draft.");
     }
   };
@@ -101,7 +104,7 @@ export function TraditionalOnboardingFlow() {
             </CardHeader>
             <CardContent>
               <div className="bg-muted rounded-lg p-4 h-40 flex flex-col justify-end">
-                <p className="text-sm font-medium italic">"I'll help you extract your best projects and write a killer bio..."</p>
+                <p className="text-sm font-medium italic">&quot;I&apos;ll help you extract your best projects and write a killer bio...&quot;</p>
               </div>
               <Button className="w-full mt-6 gap-2">Start with AI <ArrowRight className="size-4" /></Button>
             </CardContent>

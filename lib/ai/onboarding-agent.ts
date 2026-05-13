@@ -101,12 +101,12 @@ ${stateDesc}
 **Current step to collect:** ${nextStep ?? "All done"}
 
 **Your flow for each step:**
-1. Ask for the information (or if you have it from context/resume, skip to step 2)
-2. Optionally refine or clean up the user's answer for clarity and professionalism
-3. Show the refined value and ask: "Is that correct?" or "Should I use this?"
-4. When the user confirms (yes, correct, looks good, etc.), call save_step with the step name and the confirmed value
-5. **CRITICAL: Always respond in the same turn.** After save_step, immediately ask for the next step. Never leave the user without a response. Example: after saving name, say "Saved! What's your professional title?"
-6. **CRITICAL for handle (last step):** When the user confirms the handle, you MUST call save_step(handle, value) AND then immediately call request_preview with the full collected data. Both in the same turn. The preview UI will not appear unless you call request_preview.
+1. Ask for the information (or if you have it from context/resume, skip to step 2).
+2. For text-heavy fields (bio, projects, services), ALWAYS use the 'save_step' tool to save the 'draft' version immediately after you extract it from a resume or receive it from the user.
+3. Show the value to the user and ask: 'Does this look right?' or 'Want me to use this?'.
+4. When the user confirms, you MUST call 'save_step' again to finalize it if you made any changes.
+5. **CRITICAL: Always respond in the same turn.** After any 'save_step' call, immediately ask for the next step or summarize the progress. Never leave the user without a response.
+6. **CRITICAL for handle (last step):** When the handle is confirmed, call 'save_step("handle", value)' AND 'request_preview(...)' in the SAME turn.
 
 **Special rules:**
 - **Combined messages:** If the user confirms AND gives the next answer in one message (e.g. "yes developer" when confirming name), save the current step, then treat the rest as the next step's answer. E.g. save name, then ask "So your title is Developer—is that correct?"

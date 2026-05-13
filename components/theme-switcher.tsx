@@ -10,8 +10,9 @@ export const ThemeSwitcher = () => {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
-  }, []) // eslint-disable-line react-hooks/set-state-in-effect
+    const frame = requestAnimationFrame(() => setMounted(true))
+    return () => cancelAnimationFrame(frame)
+  }, [])
 
   // Always render the same element structure on server and client first-pass.
   // Moon is the safe default — resolvedTheme is undefined on the server.

@@ -27,7 +27,7 @@ function isSafeTemperature(temperature: number): boolean {
   return Number.isFinite(temperature) && temperature >= 0.2 && temperature <= 0.8;
 }
 
-async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: string; tokens: number }> {
+async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: string; tokens: number; capturedLead: GenerateAgentReplyOutput["lead"] | null }> {
   const preparedContext = await prepareContext(input);
   const startTime = Date.now();
 
@@ -38,10 +38,10 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
   let resolvedCalendarToken: string | null = input.calendarAccessToken ?? null;
   let calendarEnabled = false;
 
-  // Extremely strict regex to ensure the user actually provided a date-like term.
-  // We don't want the model taking "when are you free" and calling the tool without a date.
-  const hasDateOrDayRegex = /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(tember)?|oct(ober)?|nov(ember)?|dec(ember)?|today|tomorrow|next week|next month|this week|this weekend|\d{1,2}(st|nd|rd|th)?( of)?( )?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)( )?\d{1,2}|\d{1,2}\/\d{1,2})\b/i;
-  const userMessageSuggestsDate = hasDateOrDayRegex.test(input.message);
+  // Regex to detect date-like terms or general availability inquiries.
+  // This allows the model to access the check_availability tool more naturally.
+  const availabilityIntentRegex = /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(tember)?|oct(ober)?|nov(ember)?|dec(ember)?|today|tomorrow|next week|next month|this week|this weekend|free|available|availability|schedule|calendar|appointment|meeting|\d{1,2}(st|nd|rd|th)?( of)?( )?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)( )?\d{1,2}|\d{1,2}\/\d{1,2})\b/i;
+  const userMessageSuggestsAvailability = availabilityIntentRegex.test(input.message);
 
   if (!resolvedCalendarToken || input.calendlyEnabled === undefined) {
     try {
@@ -54,7 +54,7 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
       if (agentRow) {
         if (agentRow.googleCalendarEnabled && !resolvedCalendarToken) {
           resolvedCalendarToken = await getValidAccessToken(agentRow);
-          calendarEnabled = !!resolvedCalendarToken && userMessageSuggestsDate;
+          calendarEnabled = !!resolvedCalendarToken && userMessageSuggestsAvailability;
         }
 
         // Populate Calendly fields if they aren't provided in the input
@@ -68,10 +68,11 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
       // Non-fatal — tool will gracefully return an error if token is null
     }
   } else {
-    calendarEnabled = userMessageSuggestsDate;
+    calendarEnabled = userMessageSuggestsAvailability;
   }
 
   const calendlyEnabled = !!input.calendlyEnabled && !!input.calendlySchedulingUrl;
+  let capturedLead: GenerateAgentReplyOutput["lead"] | null = null;
 
   try {
     const messages: ModelMessage[] = [
@@ -207,6 +208,35 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
               }),
             } : {}),
 
+            capture_lead: tool({
+              description: "Call this tool when you detect buying intent or the visitor shares contact information. Capture all relevant details about their project, budget, and meeting preferences.",
+              inputSchema: z.object({
+                confidence: z.number().min(0).max(100).describe("Confidence score for the lead (0-100)."),
+                lead_data: z.object({
+                  name: z.string().optional().describe("Visitor's name."),
+                  email: z.string().optional().describe("Visitor's email address."),
+                  budget: z.string().optional().describe("Visitor's budget for the project."),
+                  project_details: z.string().optional().describe("Detailed requirements and features of the project."),
+                  meeting_time: z.string().optional().describe("Requested meeting date or time."),
+                }),
+              }),
+              execute: async (args) => {
+                console.log(`[tool:capture_lead] CALLED with:`, JSON.stringify(args));
+                capturedLead = {
+                  lead_detected: true,
+                  confidence: args.confidence,
+                  lead_data: {
+                    name: args.lead_data.name ?? "",
+                    email: args.lead_data.email ?? "",
+                    budget: args.lead_data.budget ?? "",
+                    project_details: args.lead_data.project_details ?? "",
+                    meeting_time: args.lead_data.meeting_time ?? "",
+                  }
+                };
+                return { success: true, message: "Lead information captured." };
+              },
+            }),
+
             ...(calendlyEnabled ? {
               get_calendly_link: tool({
                 description: "Get the visitor's custom Calendly booking link. ONLY call this if the visitor specifically asks for a link, wants to 'book a meeting', 'schedule time', or 'see your calendar'. NEVER call this tool if Calendly is not enabled.",
@@ -311,7 +341,7 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
     console.log(`[requestReply] SUCCESS for agent: ${input.agentId} in ${Date.now() - startTime}ms. Tokens: ${totalTokens}`);
     console.log(`[requestReply] RAW TEXT returned from model (length: ${text.length}):\n${text}`);
 
-    return { text, tokens: totalTokens };
+    return { text, tokens: totalTokens, capturedLead };
   } catch (err: unknown) {
     console.error(`[requestReply] FATAL ERROR after ${Date.now() - startTime}ms:`, err);
     if (err instanceof Error) {
@@ -355,6 +385,16 @@ export async function generateAgentReply(
     return fallback(`${attempt.firstErrorType}:${attempt.secondErrorType}`);
   }
 
+  // If a lead was captured via tool, use it
+  if (attempt.value.capturedLead) {
+    return {
+      reply: attempt.value.text.trim(),
+      lead: attempt.value.capturedLead,
+      usage: { totalTokens: attempt.value.tokens },
+    };
+  }
+
+  // Fallback to legacy parsing for older models or prompts
   const parsed = parseLeadPayload(attempt.value.text);
   if (parsed) {
     return {
@@ -367,6 +407,13 @@ export async function generateAgentReply(
   if (attempt.attempts === 1) {
     const retryAttempt = await withRetry(requestReply.bind(null, input));
     if (retryAttempt.ok) {
+      if (retryAttempt.value.capturedLead) {
+        return {
+          reply: retryAttempt.value.text.trim(),
+          lead: retryAttempt.value.capturedLead,
+          usage: { totalTokens: attempt.value.tokens + retryAttempt.value.tokens },
+        };
+      }
       const retryParsed = parseLeadPayload(retryAttempt.value.text);
       if (retryParsed) {
         return {

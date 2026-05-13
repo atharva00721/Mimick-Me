@@ -114,7 +114,7 @@ export async function resolvePublicAgentContext(input: {
       avatarUrl: portfolio?.agentAvatarUrl ?? standaloneAgent?.avatarUrl ?? null,
       intro: portfolio?.agentIntro ?? standaloneAgent?.intro ?? null,
       roleLabel: portfolio?.agentRoleLabel ?? standaloneAgent?.roleLabel ?? null,
-      workingHours: (portfolio?.agentWorkingHours as any) ?? standaloneAgent?.workingHours ?? null,
+      workingHours: (portfolio?.agentWorkingHours as ResolvedPublicAgentContext["workingHours"]) ?? standaloneAgent?.workingHours ?? null,
       offDays: portfolio?.agentOffDays ?? standaloneAgent?.offDays ?? null,
       customPrompt: portfolio?.agentCustomPrompt ?? standaloneAgent?.customPrompt ?? null,
     },

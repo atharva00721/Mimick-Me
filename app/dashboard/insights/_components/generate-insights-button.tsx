@@ -40,8 +40,8 @@ export function GenerateInsightsButton({
                 toast.success("Insights regenerated successfully!");
                 router.refresh();
             }
-        } catch (err: any) {
-            toast.error(err.message);
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : "An error occurred");
         } finally {
             setIsLoading(false);
         }

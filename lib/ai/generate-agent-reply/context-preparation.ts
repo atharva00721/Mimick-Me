@@ -4,11 +4,11 @@ import {
 } from "@/lib/knowledge/service";
 import type { AgentMessage, GenerateAgentReplyInput } from "./types";
 
-const CONTEXT_TOKEN_BUDGET = 3_200;
+const CONTEXT_TOKEN_BUDGET = 4_000; // Increased budget for better reasoning
 const CHARS_PER_TOKEN = 4;
-const MAX_HISTORY_MESSAGES = 8;
-const MAX_MESSAGE_CHARS = 1_200;
-const KNOWLEDGE_LIMIT = 5;
+const MAX_HISTORY_MESSAGES = 12; // More history for better continuity
+const MAX_MESSAGE_CHARS = 2_000;
+const KNOWLEDGE_LIMIT = 8; // More knowledge chunks for better accuracy
 
 export interface PreparedKnowledgeChunk {
   chunkId: string;

@@ -16,7 +16,7 @@ const CONFIRM_PHRASES = [
   "does that work",
   "should we go with",
 ];
-type AnyPart = Record<string, any>;
+type AnyPart = Record<string, unknown>;
 
 export type MessagePartLike = {
   type?: string;
@@ -119,16 +119,18 @@ export function extractPreviewData(messages: ChatMessageLike[]): OnboardingData 
 
     // Check legacy toolInvocations array
     if (message.toolInvocations) {
-      for (const tool of message.toolInvocations) {
-        const output = getToolOutput(tool);
+      for (const toolInvocation of message.toolInvocations) {
+        const output = getToolOutput(toolInvocation);
         if (
-          (tool.toolName === "request_preview" || getToolName(tool) === "request_preview") &&
+          (toolInvocation.toolName === "request_preview" || getToolName(toolInvocation) === "request_preview") &&
           output &&
           typeof output === "object" &&
-          (output as any).preview &&
-          isCompletePreviewData((output as any).data)
+          "preview" in output &&
+          output.preview &&
+          "data" in output &&
+          isCompletePreviewData(output.data)
         ) {
-          latestPreview = (output as any).data as OnboardingData;
+          latestPreview = output.data as OnboardingData;
         }
       }
     }
@@ -142,7 +144,7 @@ export function extractPreviewData(messages: ChatMessageLike[]): OnboardingData 
       const output = getToolOutput(part);
       if (!output || typeof output !== "object") continue;
 
-      const outputObj = output as any;
+      const outputObj = output as Record<string, unknown>;
       if (outputObj.preview && isCompletePreviewData(outputObj.data)) {
         latestPreview = outputObj.data as OnboardingData;
       }

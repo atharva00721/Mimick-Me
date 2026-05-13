@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
                 }
 
                 if (data.questions_and_answers && Array.isArray(data.questions_and_answers) && data.questions_and_answers.length > 0) {
-                    meetingNote += `\n\n**Calendly Responses:**\n` + data.questions_and_answers.map((qa: any) => `- **${qa.question}**: ${qa.answer}`).join('\n');
+                    meetingNote += `\n\n**Calendly Responses:**\n` + (data.questions_and_answers as Array<{ question: string; answer: string }>).map((qa) => `- **${qa.question}**: ${qa.answer}`).join('\n');
                 }
 
                 const newDetails = lead.projectDetails

@@ -104,7 +104,7 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
                 inputSchema: z.object({
                   date: z.string().describe("The date to check in YYYY-MM-DD format, e.g., 2024-02-28."),
                 }),
-                execute: async (args: any) => {
+                execute: async (args: { date: string }) => {
                   const { date } = args;
                   console.log(`[tool:check_availability] CALLED with RAW ARGS:`, JSON.stringify(args));
                   if (!date || date.trim() === "") {
@@ -178,7 +178,7 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
                       };
                     }
 
-                    const busySlots = events.items.map((event: any) => {
+                    const busySlots = events.items.map((event: { start: { dateTime?: string; date?: string }; end: { dateTime?: string; date?: string }; summary?: string }) => {
                       const startStr = event.start?.dateTime || event.start?.date;
                       const endStr = event.end?.dateTime || event.end?.date;
                       const start = startStr ? new Date(startStr) : null;
@@ -199,9 +199,9 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
                       summary: `There are ${events.items.length} events scheduled on this day.`,
                       availability: busySlots.length > 0 ? "Partially busy." : "Available."
                     };
-                  } catch (error: any) {
+                  } catch (error: unknown) {
                     console.error(`[tool:check_availability] CRITICAL ERROR in ${Date.now() - toolStart}ms:`, error);
-                    return { error: `An error occurred while checking availability: ${error.message || "Unknown error"}` };
+                    return { error: `An error occurred while checking availability: ${error instanceof Error ? error.message : "Unknown error"}` };
                   }
                 },
               }),
@@ -272,29 +272,29 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
         throw new Error("generateText returned undefined result");
       }
 
-      const usage = (result as any).usage;
+      const usage = (result as { usage?: { totalTokens?: number; inputTokens?: number; outputTokens?: number } }).usage;
       totalTokens += usage?.totalTokens ?? ((usage?.inputTokens ?? 0) + (usage?.outputTokens ?? 0));
 
-      const toolCalls = (result as any).toolCalls;
+      const toolCalls = (result as { toolCalls?: Array<{ toolCallId: string; toolName: string; args: unknown }> }).toolCalls;
 
       if (toolCalls && toolCalls.length > 0) {
-        if ((result as any).response?.messages) {
-          messages.push(...(result as any).response.messages);
+        if ((result as { response?: { messages?: ModelMessage[] } }).response?.messages) {
+          messages.push(...(result as { response?: { messages?: ModelMessage[] } }).response!.messages!);
         } else {
           // Fallback if response.messages is somehow missing
-          const toolCallParts = toolCalls.map((tc: any) => ({
-            type: 'tool-call',
+          const toolCallParts = toolCalls.map((tc) => ({
+            type: 'tool-call' as const,
             toolCallId: tc.toolCallId,
             toolName: tc.toolName,
             args: tc.args
           }));
           messages.push({
             role: 'assistant',
-            content: (result as any).text ? [{ type: 'text', text: (result as any).text }, ...toolCallParts] : toolCallParts
+            content: (result as { text?: string }).text ? [{ type: 'text', text: (result as { text?: string }).text! }, ...toolCallParts] : toolCallParts
           });
-          const toolResults = (result as any).toolResults || [];
-          const toolResultParts = toolResults.map((tr: any) => ({
-            type: 'tool-result',
+          const toolResults = (result as { toolResults?: Array<{ toolCallId: string; toolName: string; result: unknown }> }).toolResults || [];
+          const toolResultParts = toolResults.map((tr) => ({
+            type: 'tool-result' as const,
             toolCallId: tr.toolCallId,
             toolName: tr.toolName,
             result: tr.result !== undefined ? tr.result : "Success"
@@ -304,7 +304,7 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
         continue; // Process next step
       }
 
-      text = (result as any).text || "";
+      text = (result as { text?: string }).text || "";
       break;
     }
 
@@ -312,7 +312,7 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
     console.log(`[requestReply] RAW TEXT returned from model (length: ${text.length}):\n${text}`);
 
     return { text, tokens: totalTokens };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error(`[requestReply] FATAL ERROR after ${Date.now() - startTime}ms:`, err);
     if (err instanceof Error) {
       console.error("Stack:", err.stack);

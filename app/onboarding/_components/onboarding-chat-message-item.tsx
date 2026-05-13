@@ -226,7 +226,7 @@ export function OnboardingChatMessageItem({
     const cleaned = String(message.content).replace(RESUME_PATTERN, "").trim();
 
     return (
-      <Message from={message.role as any}>
+      <Message from={message.role as "user" | "assistant"}>
         <MessageContent className={cn("text-base max-w-2xl", message.role === "assistant" && "text-primary")}>
           {hasResume && message.role === "user" && (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
@@ -244,7 +244,7 @@ export function OnboardingChatMessageItem({
   const textParts = messageParts.filter((part): part is { type: "text"; text: string } => part.type === "text" && typeof part.text === "string");
 
   return (
-    <Message from={message.role as any}>
+    <Message from={message.role as "user" | "assistant"}>
       <MessageContent className={cn("text-base max-w-2xl", message.role === "assistant" && "text-primary")}>
         {hasResume && message.role === "user" && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">

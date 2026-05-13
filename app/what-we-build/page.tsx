@@ -104,7 +104,7 @@ export default function WhatWeBuildPage() {
                         transition={{ duration: 0.5, delay: 0.2 }}
                         className="mt-6 text-lg leading-relaxed text-muted-foreground text-balance max-w-2xl mx-auto"
                     >
-                        Mimick.me isn't one thing — it's a complete system for independent professionals who want their online presence to actively generate business.
+                        Mimick.me isn&apos;t one thing — it&apos;s a complete system for independent professionals who want their online presence to actively generate business.
                     </motion.p>
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}

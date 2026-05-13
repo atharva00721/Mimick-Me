@@ -111,7 +111,7 @@ export async function handlePublicChat(input: PublicChatInput): Promise<PublicCh
         await saveChatMessage({ sessionId, role: "assistant", content: result.reply });
 
         if (leadDetected) {
-          const ownerId = (context.portfolio as any)?.userId ?? (context.standaloneAgent as any)?.userId;
+          const ownerId = (context.portfolio as { userId?: string } | null)?.userId ?? (context.standaloneAgent as { userId: string })?.userId;
           const dedupeResult = await saveLeadWithDedup({
             agentId: context.agentId,
             portfolioId: context.portfolio?.id ?? null,

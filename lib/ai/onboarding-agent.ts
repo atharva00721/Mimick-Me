@@ -1,16 +1,20 @@
-// Fix linting issues
 import { convertToModelMessages, stepCountIs, streamText, tool } from "ai";
 import type { UIMessage } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { onboardingDrafts } from "@/lib/schema";
 import { getPortfolioByHandle } from "@/lib/db/portfolio";
-import { withDefaultSelectedSections, type OnboardingData, type OnboardingStep } from "@/lib/onboarding/types";
+import {
+  withDefaultSelectedSections,
+  ONBOARDING_STEPS,
+  type OnboardingData,
+  type OnboardingStep,
+  type OnboardingSelectedSections,
+} from "@/lib/onboarding/types";
 import {
   validateFinalOnboardingState,
   validateStepInput,
 } from "@/lib/onboarding/validation";
-import { ONBOARDING_STEPS } from "@/lib/onboarding/types";
 import { resolveChatModel } from "./model-provider";
 
 function buildSystemPrompt(
@@ -152,6 +156,7 @@ export async function streamOnboardingChat({
             "selectedSections",
             "title",
             "bio",
+            "sections",
             "services",
             "projects",
             "siteUrl",
@@ -209,7 +214,8 @@ export async function streamOnboardingChat({
           }
 
           const parsedValue = validation.value;
-          (collected as Record<string, unknown>)[step] = parsedValue;
+          const key = step as keyof OnboardingData;
+          (collected as Record<string, unknown>)[key] = parsedValue;
           const merged = { ...collected };
 
           try {
@@ -265,11 +271,20 @@ export async function streamOnboardingChat({
           handle: z.string(),
         }),
         execute: async (data) => {
-          if (data.selectedSections && (data.selectedSections as { hero: string | boolean }).hero === "on") {
-            data = { ...data, selectedSections: { ...data.selectedSections!, hero: true } as { hero: true; about: boolean; services: boolean; projects: boolean; cta: boolean; socials: boolean } };
+          let finalData = data;
+          if (data.selectedSections && data.selectedSections.hero === "on") {
+            finalData = {
+              ...data,
+              selectedSections: {
+                ...data.selectedSections,
+                hero: true as const,
+              },
+            };
           }
-          console.log("[request_preview] execute called with:", data);
-          const parsed = validateFinalOnboardingState(data as OnboardingData);
+          console.log("[request_preview] execute called with:", finalData);
+          const parsed = validateFinalOnboardingState(
+            finalData as unknown as OnboardingData
+          );
           if (!parsed.ok) {
             console.error(
               "[request_preview] validation failed:",

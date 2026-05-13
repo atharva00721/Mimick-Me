@@ -53,7 +53,7 @@ export const agentLeads = pgTable(
     confidence: real("confidence").notNull(),
     sessionId: uuid("session_id"),
     notificationSent: boolean("notification_sent").notNull().default(false),
-    enrichment: jsonb("enrichment").$type<any>(),
+    enrichment: jsonb("enrichment").$type<unknown>(),
     createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { mode: "date" }).notNull().defaultNow(),
   },

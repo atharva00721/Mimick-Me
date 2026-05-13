@@ -85,7 +85,7 @@ export function TraditionalOnboardingFlow() {
       } else {
         toast.error("No AI chat draft found. Try the AI setup first!");
       }
-    } catch (_err) {
+    } catch {
       toast.error("Failed to fetch AI draft.");
     }
   };

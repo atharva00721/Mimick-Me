@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
         const body = JSON.parse(rawBody);
         sessionId = body.sessionId;
         attempt = Number(body.attempt ?? 0);
-    } catch (e) {
+    } catch {
         return NextResponse.json({ error: "Invalid body" }, { status: 400 });
     }
 

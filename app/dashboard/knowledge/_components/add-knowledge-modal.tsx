@@ -76,7 +76,7 @@ export function AddKnowledgeModal({
       <DialogContent className="sm:max-w-2xl rounded-2xl border-primary/10 bg-background/95 backdrop-blur-xl">
         <DialogHeader>
           <DialogTitle className="font-normal tracking-tight">Add Knowledge</DialogTitle>
-          <CardDescription className="text-xs font-normal">Expand your agent's brain with new information.</CardDescription>
+          <CardDescription className="text-xs font-normal">Expand your agent&apos;s brain with new information.</CardDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -186,7 +186,7 @@ export function AddKnowledgeModal({
                 )}
               </Button>
               <p className="text-[10px] text-muted-foreground text-center px-4 leading-relaxed font-normal">
-                We'll extract the main text content and add it to your knowledge base.
+                We&apos;ll extract the main text content and add it to your knowledge base.
               </p>
             </TabsContent>
           </Tabs>

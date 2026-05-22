@@ -114,8 +114,9 @@ export function verifySignature(
 
     if (!timestamp || !signature) return false;
 
-    const crypto = require("node:crypto");
-    const hmac = crypto.createHmac("sha256", CALENDLY_WEBHOOK_SIGNING_KEY);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { createHmac } = require("node:crypto");
+    const hmac = createHmac("sha256", CALENDLY_WEBHOOK_SIGNING_KEY);
     hmac.update(`${timestamp}.${body}`);
     const expectedSignature = hmac.digest("hex");
 

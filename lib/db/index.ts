@@ -69,7 +69,6 @@ export async function withRetry<T>(
       return await operation();
     } catch (error: unknown) {
       lastError = error;
-      const err = error as any; // Using local cast for property access if needed, or better:
       const errorCode = (error as { code?: string })?.code;
       const errorMessage = (error as { message?: string })?.message;
       const errorSeverity = (error as { severity?: string })?.severity;

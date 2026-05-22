@@ -40,12 +40,20 @@ export function GalleryTemplate({ content }: { content: PortfolioContent }) {
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
-  const openProject = (index: number) => { setSelectedProject(index); setIsLightboxOpen(true); document.body.style.overflow = "hidden"; };
-  const closeProject = () => { setIsLightboxOpen(false); document.body.style.overflow = ""; setTimeout(() => setSelectedProject(null), 300); };
+  const openProject = (index: number) => { setSelectedProject(index); setIsLightboxOpen(true); };
+  const closeProject = () => { setIsLightboxOpen(false); setTimeout(() => setSelectedProject(null), 300); };
   const goToProject = (dir: "prev" | "next") => {
     if (selectedProject === null) return;
     setSelectedProject(dir === "next" ? (selectedProject + 1) % content.projects.length : (selectedProject - 1 + content.projects.length) % content.projects.length);
   };
+
+  useEffect(() => {
+    if (isLightboxOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+  }, [isLightboxOpen]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

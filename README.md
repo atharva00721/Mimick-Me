@@ -1,11 +1,11 @@
-# Rep AI SaaS Skeleton (Next.js 16)
+# Mimick-Me (Next.js 16)
 
 This app now includes:
 
-- **Auth.js (NextAuth v5)** with credentials sign-up/sign-in
+- **Better Auth** with email/password sign-up/sign-in
 - **Neon Postgres** + **Drizzle ORM**
-- Per-user data for profile, leads, and credits
-- Route/API protection via middleware
+- Per-user portfolios, agents, leads, and knowledge sources
+- Public portfolio pages plus an embeddable chat widget
 
 ## Required environment variables
 
@@ -14,12 +14,17 @@ Create `.env.local`:
 ```bash
 DATABASE_URL="postgresql://..."
 AUTH_SECRET="replace-with-a-long-random-secret"
-AUTH_TRUST_HOST="true"
-# Optional auth providers
-AUTH_GITHUB_ID=""
-AUTH_GITHUB_SECRET=""
-AUTH_GOOGLE_ID=""
-AUTH_GOOGLE_SECRET=""
+BETTER_AUTH_URL="http://localhost:3000"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+TOKEN_ENCRYPTION_KEY="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+NEBIUS_API_KEY=""
+
+# Optional
+NEXT_PUBLIC_ROOT_DOMAIN="localhost:3000"
+TRUSTED_ORIGINS="http://localhost:3000"
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+TAVILY_API_KEY=""
 ```
 
 ## Setup
@@ -34,7 +39,7 @@ bun dev
 
 - Sign up at `/auth/signup`
 - Sign in at `/auth/signin`
-- `/dashboard`, `/api/chat`, `/api/profile`, and `/api/leads` require authentication.
+- Most `/dashboard/*` pages and private API routes require authentication.
 
 ## Database schema
 
@@ -42,7 +47,8 @@ Defined in `lib/schema.ts`:
 
 - `users` (id, email, name, plan, credits + auth fields)
 - `leads` (id, name, email, company, userId, createdAt)
-- Auth.js tables: `accounts`, `sessions`, `verification_tokens`
+- `portfolios`, `agents`, `knowledgeSources`, `knowledgeChunks`, and related analytics tables
+- Better Auth tables: `accounts`, `sessions`, `verifications`
 
 ## Agent eval workflow (pre-release gate)
 

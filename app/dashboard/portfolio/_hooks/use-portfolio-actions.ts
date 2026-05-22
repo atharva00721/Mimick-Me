@@ -11,7 +11,12 @@ import {
   type PortfolioContent,
 } from "../../actions";
 
-export function usePortfolioActions(hasContent: boolean, initialPublished: boolean) {
+export function usePortfolioActions(
+  hasContent: boolean,
+  initialPublished: boolean,
+  /** Optional guard: return an error string to block publishing, or null to allow */
+  publishGuard?: () => string | null
+) {
   const [isPublished, setIsPublished] = useState(initialPublished);
 
   const publishMutation = useMutation({
@@ -47,9 +52,21 @@ export function usePortfolioActions(hasContent: boolean, initialPublished: boole
       return;
     }
 
+    // Run optional guard (e.g. template requires images)
+    if (checked && publishGuard) {
+      const blockReason = publishGuard();
+      if (blockReason) {
+        toast.error(blockReason, {
+          description: "Please complete the required steps before going live.",
+          duration: 5000,
+        });
+        return;
+      }
+    }
+
     setIsPublished(checked);
     publishMutation.mutate(checked);
-  }, [hasContent, publishMutation]);
+  }, [hasContent, publishGuard, publishMutation]);
 
   const handleTemplateChange = useCallback((value: string) => {
     templateMutation.mutate(value);

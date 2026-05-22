@@ -9,14 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Save, X, RefreshCw, Eye, ArrowLeft, Send } from "lucide-react";
+import { Loader2, Save, X, RefreshCw, Eye, ArrowLeft, Send, ImageIcon } from "lucide-react";
 import { SectionRegenerateButton } from "@/components/portfolio/section-regenerate-button";
 import { PromptInput, PromptInputSubmit, PromptInputTextarea, PromptInputBody, PromptInputFooter } from "@/components/ai-elements/prompt-input";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import Link from "next/link";
 import { usePortfolioActions } from "./_hooks/use-portfolio-actions";
 import { usePortfolioEditorStore } from "./_hooks/use-portfolio-editor-store";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import type { PortfolioContent } from "../actions";
 import type { SocialLink, SocialPlatform } from "@/lib/validation/portfolio-schema";
@@ -48,6 +48,20 @@ interface PortfolioClientProps {
 
 
 export function PortfolioClient({ portfolio, plan = "free", content }: PortfolioClientProps) {
+  // ── Publish guard: templates that require images ────────────────────────────
+  // We read from editedContent (live state) so the guard reacts to unsaved uploads too.
+  // Note: editedContent is declared below — we use a ref-pattern via a callback so
+  // it always captures the latest value at call time.
+  const editedContentRef = useRef<PortfolioContent | null>(null);
+
+  const publishGuard = useCallback((): string | null => {
+    const current = editedContentRef.current;
+    if (portfolio.template === "personal" && !current?.about?.avatarUrl) {
+      return "The Personal template requires a profile photo. Go to the About tab and upload one first.";
+    }
+    return null;
+  }, [portfolio.template]);
+
   const {
     isPending,
     isPublished,
@@ -55,11 +69,16 @@ export function PortfolioClient({ portfolio, plan = "free", content }: Portfolio
     handlePublishChange,
     handleTemplateChange,
     handleRegenerate,
-  } = usePortfolioActions(Boolean(content), portfolio.isPublished);
+  } = usePortfolioActions(Boolean(content), portfolio.isPublished, publishGuard);
 
   const { editedContent, setEditedContent, resetFromServer } = usePortfolioEditorStore();
   const [activeTab, setActiveTab] = useState<string>("hero");
   const [undoSnapshot, setUndoSnapshot] = useState<unknown>(null);
+
+  // Keep editedContentRef in sync so publishGuard always reads latest state
+  useEffect(() => {
+    editedContentRef.current = editedContent;
+  }, [editedContent]);
 
   const saveMutation = useSavePortfolioContent();
   const {
@@ -178,6 +197,10 @@ export function PortfolioClient({ portfolio, plan = "free", content }: Portfolio
   const isContentSectionVisible = (section: PortfolioSectionKey) =>
     isSectionVisible(visibleSections, section);
 
+  // For the Personal template: detect when a photo has not been uploaded yet
+  const needsAvatarWarning =
+    portfolio.template === "personal" && !displayContent?.about?.avatarUrl;
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 pb-8">
       <Card className="border-1">
@@ -215,6 +238,29 @@ export function PortfolioClient({ portfolio, plan = "free", content }: Portfolio
           </div>
         </CardHeader>
       </Card>
+
+      {/* Personal template — photo missing banner */}
+      {needsAvatarWarning && (
+        <div className="flex items-start gap-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 p-4 text-amber-900 dark:text-amber-100 animate-in fade-in duration-300">
+          <div className="mt-0.5 shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-amber-200 dark:bg-amber-800">
+            <ImageIcon className="size-4 text-amber-700 dark:text-amber-200" />
+          </div>
+          <div className="flex-1 space-y-1">
+            <p className="text-sm font-semibold">Your Personal template looks better with a real photo</p>
+            <p className="text-xs text-amber-700 dark:text-amber-300">
+              Upload a profile picture in the &lsquo;About&rsquo; tab — it will replace the abstract placeholder in your hero and about sections.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="shrink-0 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900"
+            onClick={() => setActiveTab("about")}
+          >
+            Upload Photo
+          </Button>
+        </div>
+      )}
 
       {/* Floating Action Bar */}
       {hasChanges && (
@@ -304,8 +350,9 @@ export function PortfolioClient({ portfolio, plan = "free", content }: Portfolio
               <SelectItem value="bold">Bold</SelectItem>
               <SelectItem value="editorial">Editorial</SelectItem>
               <SelectItem value="gallery">Gallery</SelectItem>
-              <SelectItem value="minimal">Minimal</SelectItem>
               <SelectItem value="interactive">Interactive</SelectItem>
+              <SelectItem value="studio">Studio</SelectItem>
+              <SelectItem value="personal">Personal</SelectItem>
             </SelectContent>
           </Select>
 

@@ -1,8 +1,6 @@
 import { and, count, desc, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { agents, knowledgeChunks, knowledgeSources, portfolios, users } from "@/lib/schema";
-import { chunkText } from "@/lib/knowledge/chunk-text";
-import { generateEmbeddings } from "@/lib/ai/embeddings";
 
 export interface KnowledgeSourceRecord {
   id: string;
@@ -17,36 +15,6 @@ export interface KnowledgeSourceRecord {
   createdAt: Date;
   updatedAt: Date;
   chunkCount: number;
-}
-
-async function persistChunksWithEmbeddings(input: {
-  sourceId: string;
-  agentId: string;
-  content: string;
-  now?: Date;
-}) {
-  const chunks = chunkText(input.content);
-  if (chunks.length === 0) return;
-
-  const now = input.now ?? new Date();
-  let embeddings: number[][] = [];
-
-  try {
-    embeddings = await generateEmbeddings(chunks);
-  } catch (error) {
-    console.warn("Failed to generate embeddings:", error);
-  }
-
-  await db.insert(knowledgeChunks).values(
-    chunks.map((chunk, index) => ({
-      id: crypto.randomUUID(),
-      sourceId: input.sourceId,
-      agentId: input.agentId,
-      chunkText: chunk,
-      embedding: embeddings[index] ? `[${embeddings[index].join(",")}]` : null,
-      createdAt: now,
-    }))
-  );
 }
 
 /** Get agent by userId — looks up the active portfolio via cookie first, then falls back to first portfolio. */
@@ -151,14 +119,6 @@ export async function createKnowledgeSourceRecord(input: {
     updatedAt: now,
   });
 
-  await persistChunksWithEmbeddings({
-    sourceId: id,
-    agentId: input.agentId,
-    content: input.content,
-    now,
-  });
-
-
   return { ok: true as const, sourceId: id, now };
 }
 
@@ -185,16 +145,6 @@ export async function updateKnowledgeSourceRecord(input: {
     .update(knowledgeSources)
     .set({ title: input.title, content: input.content, updatedAt: now })
     .where(eq(knowledgeSources.id, input.id));
-
-  await db.delete(knowledgeChunks).where(eq(knowledgeChunks.sourceId, input.id));
-
-  await persistChunksWithEmbeddings({
-    sourceId: input.id,
-    agentId: input.agentId,
-    content: input.content,
-    now,
-  });
-
 
   return { ok: true as const };
 }

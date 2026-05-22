@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/server";
-import { OnboardingChatWrapper } from "@/app/onboarding/onboarding-chat-wrapper";
+import { TraditionalOnboardingFlow } from "@/app/onboarding/traditional-onboarding-flow";
 import { checkPortfolioLimit } from "@/lib/billing";
 
 export default async function OnboardingPage() {
@@ -17,5 +17,5 @@ export default async function OnboardingPage() {
     redirect("/dashboard?error=limit_reached");
   }
 
-  return <OnboardingChatWrapper />;
+  return <TraditionalOnboardingFlow />;
 }

@@ -1,4 +1,3 @@
-// Fix linting issues
 import type { PortfolioTone } from "@/lib/db/portfolio";
 import {
   getDefaultVisibleSections,
@@ -236,12 +235,16 @@ export function validateStepInput(step: OnboardingStep, answer: string): Validat
   return { ok: true, value: handleResult.value };
 }
 
-export function validateFinalOnboardingState(state: Partial<OnboardingData> | undefined | null): ValidationResult<OnboardingData> {
+export function validateFinalOnboardingState(
+  state: Partial<OnboardingData> | undefined | null
+): ValidationResult<OnboardingData> {
   if (state == null || typeof state !== "object") {
     return { ok: false, message: "Invalid onboarding state." };
   }
 
-  const stateWithDefaults = withDefaultSelectedSections(state);
+  const stateWithDefaults = withDefaultSelectedSections(
+    state as Partial<OnboardingData>
+  );
   if (!stateWithDefaults) {
     return { ok: false, message: "Invalid onboarding state." };
   }
@@ -258,7 +261,6 @@ export function validateFinalOnboardingState(state: Partial<OnboardingData> | un
     "title",
     "bio",
     "sections",
-    "services",
     "tone",
     "handle",
   ];
@@ -287,10 +289,22 @@ export function validateFinalOnboardingState(state: Partial<OnboardingData> | un
     }
   }
 
+  const visibleSections = stateWithSections.selectedSections!;
+  const normalizedServices =
+    visibleSections.services && Array.isArray(stateWithSections.services)
+      ? stateWithSections.services
+      : [];
+  const normalizedProjects =
+    visibleSections.projects && Array.isArray(stateWithSections.projects)
+      ? stateWithSections.projects
+      : [];
+
   return {
     ok: true,
     value: {
-      ...(state as OnboardingData),
+      ...(stateWithSections as OnboardingData),
+      services: normalizedServices,
+      projects: normalizedProjects,
       sections: mergeVisibleSections(stateWithSections.sections, getDefaultVisibleSections()),
     },
   };

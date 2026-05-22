@@ -62,7 +62,15 @@ export function usePortfolioContentEditors({ editedContent, setEditedContent }: 
     if (!editedContent) return;
     setEditedContent({
       ...editedContent,
-      about: { paragraph: value },
+      about: { ...editedContent.about, paragraph: value },
+    });
+  }, [editedContent, setEditedContent]);
+
+  const updateAboutImage = useCallback((avatarUrl: string) => {
+    if (!editedContent) return;
+    setEditedContent({
+      ...editedContent,
+      about: { ...editedContent.about, avatarUrl },
     });
   }, [editedContent, setEditedContent]);
 
@@ -235,6 +243,7 @@ export function usePortfolioContentEditors({ editedContent, setEditedContent }: 
   return {
     updateHero,
     updateAbout,
+    updateAboutImage,
     updateCta,
     updateService,
     addService,

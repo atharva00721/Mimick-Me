@@ -47,6 +47,7 @@ export function PortfolioTabSections({
           editMode={true}
           content={displayContent?.about || null}
           onUpdate={editors.updateAbout}
+          onUpdateImage={editors.updateAboutImage}
           isVisible={isContentSectionVisible("about")}
           onVisibilityChange={(checked) => editors.updateVisibleSection("about", checked)}
         />

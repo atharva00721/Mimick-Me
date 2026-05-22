@@ -361,7 +361,7 @@ export function AgentWidgetTab(props: AgentWidgetTabProps) {
                   {/* Launcher Icon */}
                   <div className="space-y-2">
                     <Label className="font-semibold">Launcher Icon</Label>
-                    <Select value={widgetIcon} onValueChange={(v) => setWidgetIcon(v as any)}>
+                    <Select value={widgetIcon} onValueChange={(v) => setWidgetIcon(v as "chat-bubble" | "sparkles" | "bot" | "zap")}>
                       <SelectTrigger className="w-full shadow-sm"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="chat-bubble">Chat Bubble</SelectItem>

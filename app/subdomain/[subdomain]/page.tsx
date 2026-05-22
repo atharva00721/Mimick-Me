@@ -8,6 +8,8 @@ import { LandingTemplate } from "@/components/templates/landing-template";
 import { GalleryTemplate } from "@/components/templates/gallery-template";
 import { MinimalTemplate } from "@/components/templates/minimal-template";
 import { InteractiveTemplate } from "@/components/templates/interactive-template";
+import { StudioTemplate } from "@/components/templates/studio-template";
+import { PersonalTemplate } from "@/components/templates/personal-template";
 import { getPublishedPortfolioWithAgentBySubdomain } from "@/lib/db/portfolio";
 import { validatePortfolioContent } from "@/lib/validation/portfolio-schema";
 import { AgentWidget } from "@/components/agent-widget";
@@ -95,6 +97,10 @@ export default async function PublicSubdomainPage({ params }: PublicSubdomainPag
         <MinimalTemplate content={content} />
       ) : portfolio.template === "interactive" ? (
         <InteractiveTemplate content={content} />
+      ) : portfolio.template === "studio" ? (
+        <StudioTemplate content={content} />
+      ) : portfolio.template === "personal" ? (
+        <PersonalTemplate content={content} />
       ) : (
         <ModernTemplate content={content} />
       )}

@@ -27,13 +27,22 @@ const globalForDb = globalThis as unknown as {
 
 const databaseUrl = process.env.DATABASE_URL ?? "postgres://postgres:postgres@127.0.0.1:5432/postgres";
 
+function shouldRequireSsl(connectionString: string) {
+  try {
+    const hostname = new URL(connectionString).hostname;
+    return hostname !== "127.0.0.1" && hostname !== "localhost";
+  } catch {
+    return true;
+  }
+}
+
 if (!process.env.DATABASE_URL && process.env.NODE_ENV !== "production") {
   console.warn("DATABASE_URL is not set; using fallback local connection string for build/dev checks.");
 }
 
 const sql = globalForDb.sql ?? postgres(databaseUrl, {
   prepare: false,
-  ssl: "require",
+  ssl: shouldRequireSsl(databaseUrl) ? "require" : undefined,
   connect_timeout: 30,
   idle_timeout: 20,    // 20s: long enough to reuse connections, short enough to avoid stale pooler sockets
   max_lifetime: 60 * 5, // 5 minutes
@@ -60,7 +69,6 @@ export async function withRetry<T>(
       return await operation();
     } catch (error: unknown) {
       lastError = error;
-      const err = error as any; // Using local cast for property access if needed, or better:
       const errorCode = (error as { code?: string })?.code;
       const errorMessage = (error as { message?: string })?.message;
       const errorSeverity = (error as { severity?: string })?.severity;

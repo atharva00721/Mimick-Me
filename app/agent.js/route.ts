@@ -226,6 +226,23 @@ export async function GET(request: Request) {
   button.onmouseover = function() { button.style.transform = 'scale(1.06)'; };
   button.onmouseout = function() { button.style.transform = 'scale(1)'; };
 
+  var wrapper = document.createElement('div');
+  wrapper.id = 'rep-ai-launcher-wrapper';
+  wrapper.style.cssText = [
+    'position:fixed',
+    'bottom:20px',
+    pos === 'bottom-right' ? 'right:20px' : 'left:20px',
+    'z-index:2147483647',
+    'display:inline-flex',
+  ].join(';');
+  button.style.position = 'relative';
+  button.style.bottom = '';
+  button.style.right = '';
+  button.style.left = '';
+  button.style.zIndex = '';
+  wrapper.appendChild(button);
+  document.body.appendChild(wrapper);
+
   /* ---- greeting tooltip + proactive badge ---- */
   var greetingParam = ${JSON.stringify(greeting)};
   var proactiveParam = ${JSON.stringify(proactive)};
@@ -299,25 +316,8 @@ export async function GET(request: Request) {
         'pointer-events:none',
         'z-index:1',
       ].join(';');
-      button.style.position = 'fixed'; /* ensure relative context for badge */
-      /* wrap button in a relative container so badge positions correctly */
-      wrapper.id = 'rep-ai-launcher-wrapper';
-      wrapper.style.cssText = [
-        'position:fixed',
-        'bottom:20px',
-        pos === 'bottom-right' ? 'right:20px' : 'left:20px',
-        'z-index:2147483647',
-        'display:inline-flex',
-      ].join(';');
-      /* move button into wrapper */
-      button.style.position = 'relative';
-      button.style.bottom = '';
-      button.style.right = '';
-      button.style.left = '';
-      button.style.zIndex = '';
-      wrapper.appendChild(button);
+      if (!wrapper.contains(button)) wrapper.appendChild(button);
       wrapper.appendChild(badge);
-      document.body.appendChild(wrapper);
     }
     badge.innerText = String(count);
     requestAnimationFrame(function() {
@@ -383,24 +383,6 @@ export async function GET(request: Request) {
     }
   });
 
-  /* only append button directly if no proactive (wrapper handles it otherwise) */
-  if (!proactiveParam) {
-    var finalWrapper = document.createElement('div');
-    finalWrapper.id = 'rep-ai-launcher-wrapper';
-    finalWrapper.style.cssText = [
-      'position:fixed',
-      'bottom:20px',
-      pos === 'bottom-right' ? 'right:20px' : 'left:20px',
-      'z-index:2147483647',
-      'display:inline-flex',
-    ].join(';');
-    button.style.position = 'relative';
-    button.style.bottom = '';
-    button.style.right = '';
-    button.style.left = '';
-    finalWrapper.appendChild(button);
-    document.body.appendChild(finalWrapper);
-  }
   document.body.appendChild(iframe);
 })();`;
 

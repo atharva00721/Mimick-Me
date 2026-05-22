@@ -23,6 +23,7 @@ export type PortfolioContent = {
   };
   about: {
     paragraph: string;
+    avatarUrl?: string;
   };
   services: {
     title: string;
@@ -161,6 +162,7 @@ const portfolioContentSchema = z
     about: z
       .object({
         paragraph: z.string().min(1),
+        avatarUrl: z.string().optional(),
       })
       .strict(),
     services: z.array(serviceSchema),

@@ -2,6 +2,7 @@ import { DefaultChatTransport } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import type { OnboardingData } from "@/lib/onboarding/types";
 import { validateFinalOnboardingState } from "@/lib/onboarding/validation";
 import { extractPreviewData, INITIAL_GREETING } from "@/app/onboarding/_lib/onboarding-chat-utils";
@@ -68,10 +69,15 @@ export function useOnboardingChatState() {
         router.push(json.redirectTo);
       } else if (json.error) {
         console.error(json.error);
+        toast.error(json.error);
+        setIsConfirming(false);
+      } else {
+        toast.error("Unable to complete onboarding right now.");
         setIsConfirming(false);
       }
     } catch (err) {
       console.error(err);
+      toast.error("Unable to complete onboarding right now.");
       setIsConfirming(false);
     }
   }, [previewData, router]);
@@ -79,7 +85,7 @@ export function useOnboardingChatState() {
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     const text = input.trim();
-    if (!text || status === "streaming") return;
+    if (!text || status === "submitted" || status === "streaming") return;
     sendMessage({ text });
     setInput("");
   }, [input, sendMessage, status]);

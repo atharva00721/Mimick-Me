@@ -70,7 +70,7 @@ async function main() {
                 }, {} as Record<string, string[]>);
 
                 let formattedLogs = "";
-                Object.entries(logsBySession).forEach(([sessionId, msgs], index) => {
+                Object.entries(logsBySession).forEach(([_, msgs], index) => {
                     formattedLogs += `--- Session ${index + 1} ---\n`;
                     formattedLogs += msgs.join('\n') + '\n\n';
                 });
@@ -88,7 +88,7 @@ async function main() {
                 });
 
                 successCount++;
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error(`Error processing portfolio ${portfolioId}:`, err);
                 errorCount++;
             }
@@ -97,7 +97,7 @@ async function main() {
         console.log(`Batch job complete. Success: ${successCount}, Skipped: ${skipCount}, Errors: ${errorCount}`);
         process.exit(0);
 
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Batch Job Failed:", error);
         process.exit(1);
     }

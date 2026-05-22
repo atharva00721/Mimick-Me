@@ -41,18 +41,45 @@ const Tabs = ({
   setSelectedTab: (input: [number, number]) => void;
 }) => {
   const [buttonRefs, setButtonRefs] = React.useState<Array<HTMLButtonElement | null>>([]);
-
-  React.useEffect(() => {
-    setButtonRefs((prev) => prev.slice(0, tabs.length));
-  }, [tabs.length]);
+  const [navRect, setNavRect] = React.useState<DOMRect | null>(null);
+  const [selectedRect, setSelectedRect] = React.useState<DOMRect | null>(null);
+  const [hoveredRect, setHoveredRect] = React.useState<DOMRect | null>(null);
+  const [hoveredTabIndex, setHoveredTabIndex] = React.useState<number | null>(null);
 
   const navRef = React.useRef<HTMLDivElement>(null);
-  const navRect = navRef.current?.getBoundingClientRect();
 
-  const selectedRect = buttonRefs[selectedTabIndex]?.getBoundingClientRect();
+  const useIsomorphicLayoutEffect =
+    typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
 
-  const [hoveredTabIndex, setHoveredTabIndex] = React.useState<number | null>(null);
-  const hoveredRect = buttonRefs[hoveredTabIndex ?? -1]?.getBoundingClientRect();
+  React.useEffect(() => {
+    setButtonRefs((prev) => {
+      const next = prev.slice(0, tabs.length);
+      while (next.length < tabs.length) next.push(null);
+      return next;
+    });
+  }, [tabs.length]);
+
+  useIsomorphicLayoutEffect(() => {
+    if (navRef.current) {
+      setNavRect(navRef.current.getBoundingClientRect());
+    }
+  }, []);
+
+  useIsomorphicLayoutEffect(() => {
+    const selectedButton = buttonRefs[selectedTabIndex];
+    if (selectedButton) {
+      setSelectedRect(selectedButton.getBoundingClientRect());
+    }
+  }, [selectedTabIndex, buttonRefs]);
+
+  useIsomorphicLayoutEffect(() => {
+    const hoveredButton = hoveredTabIndex !== null ? buttonRefs[hoveredTabIndex] : null;
+    if (hoveredButton) {
+      setHoveredRect(hoveredButton.getBoundingClientRect());
+    } else {
+      setHoveredRect(null);
+    }
+  }, [hoveredTabIndex, buttonRefs]);
 
   return (
     <nav
@@ -71,7 +98,12 @@ const Tabs = ({
             onClick={() => setSelectedTab([i, i > selectedTabIndex ? 1 : -1])}>
             <motion.span
               ref={(el) => {
-                buttonRefs[i] = el as HTMLButtonElement;
+                setButtonRefs((prev) => {
+                  if (prev[i] === el) return prev;
+                  const next = [...prev];
+                  next[i] = el as HTMLButtonElement;
+                  return next;
+                });
               }}
               className={cn('block', {
                 'text-zinc-500': !isActive,

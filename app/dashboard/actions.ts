@@ -1,6 +1,6 @@
 "use server";
 
-import { getSession } from "@/auth";
+import { getSession } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { portfolios } from "@/lib/schema";
 import { eq } from "drizzle-orm";
@@ -17,24 +17,13 @@ import { generatePortfolio } from "@/lib/ai/generate-portfolio";
 import { validateHandle } from "@/lib/validation/handle";
 import { handlePublicChat, type PublicChatResult } from "@/lib/ai/public-chat-handler";
 import { sanitizeHistory } from "@/lib/validation/public-chat";
-import { type PortfolioContent as ValidatedPortfolioContent } from "@/lib/validation/portfolio-schema";
+import { validatePortfolioContent, type PortfolioContent as ValidatedPortfolioContent } from "@/lib/validation/portfolio-schema";
+import { validateSubdomain } from "@/lib/validation/handle";
+import { canUsePortfolioSubdomain } from "@/lib/billing";
 
 import { mergeVisibleSections } from "@/lib/portfolio/section-registry";
 
-export type PortfolioContent = {
-  visibleSections?: ValidatedPortfolioContent["visibleSections"];
-  hero?: { headline?: string; subheadline?: string; ctaText?: string };
-  about?: { paragraph?: string };
-  services?: { title: string; description: string }[];
-  projects?: { title: string; description: string; result: string }[];
-  products?: { title: string; description: string; price: string; url: string; image: string }[];
-  history?: { role: string; company: string; period: string; description: string }[];
-  testimonials?: { quote: string; author: string; role: string }[];
-  faq?: { question: string; answer: string }[];
-  gallery?: { url: string; caption: string }[];
-  cta?: { headline?: string; subtext?: string };
-  socialLinks?: { platform: "twitter" | "linkedin" | "github" | "instagram" | "youtube" | "facebook" | "website"; enabled: boolean; url: string }[];
-};
+export type PortfolioContent = ValidatedPortfolioContent;
 
 async function requireAuth() {
   const session = await getSession();
@@ -97,7 +86,26 @@ export async function regeneratePortfolio() {
   const portfolio = await getActivePortfolio(userId);
   if (!portfolio) throw new Error("Portfolio not found");
 
+  const { consumeCredits, getCredits } = await import("@/lib/credits");
+  const { calculateSectionCount } = await import("@/lib/portfolio/section-registry");
+
+  const sectionCount = calculateSectionCount(
+    (portfolio.content as { visibleSections?: unknown })?.visibleSections,
+    (portfolio.onboardingData as { sections?: unknown })?.sections
+  );
+  const creditCost = Math.max(1, sectionCount);
+
+  const currentCredits = await getCredits(userId);
+  if (currentCredits < creditCost) {
+    throw new Error(`Not enough credits. This action requires ${creditCost} credits.`);
+  }
+
   await generatePortfolio(userId, portfolio.id);
+
+  const creditsConsumed = await consumeCredits(userId, creditCost);
+  if (!creditsConsumed) {
+    throw new Error("Not enough credits to regenerate portfolio.");
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/portfolio");
@@ -147,6 +155,51 @@ export async function updateHandle(newHandle: string) {
   revalidatePath("/dashboard/settings");
 }
 
+
+export async function updateSubdomain(newSubdomain: string) {
+  const userId = await requireAuth();
+  const portfolio = await getActivePortfolio(userId);
+  if (!portfolio) throw new Error("Portfolio not found");
+
+  const allowed = await canUsePortfolioSubdomain(userId);
+  if (!allowed) {
+    throw new Error("Subdomains are available on Pro and Agency plans.");
+  }
+
+  const normalizedSubdomain = newSubdomain.trim().toLowerCase();
+
+  if (!normalizedSubdomain) {
+    await db.update(portfolios).set({
+      subdomain: null,
+      updatedAt: new Date(),
+    }).where(eq(portfolios.id, portfolio.id));
+
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/settings");
+    return;
+  }
+
+  const validation = validateSubdomain(normalizedSubdomain);
+  if (!validation.ok) {
+    throw new Error(validation.message);
+  }
+
+  const { isSubdomainAvailable } = await import("@/lib/db/portfolio");
+  const available = await isSubdomainAvailable(validation.value, portfolio.id);
+
+  if (!available) {
+    throw new Error("This subdomain is already taken");
+  }
+
+  await db.update(portfolios).set({
+    subdomain: validation.value,
+    updatedAt: new Date(),
+  }).where(eq(portfolios.id, portfolio.id));
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/settings");
+}
+
 export async function updatePortfolioName(name: string) {
   const userId = await requireAuth();
   const portfolio = await getActivePortfolio(userId);
@@ -159,6 +212,30 @@ export async function updatePortfolioName(name: string) {
     name: trimmed,
     updatedAt: new Date(),
   }).where(eq(portfolios.id, portfolio.id));
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/settings");
+}
+
+export async function updateProfile(data: { name?: string; image?: string }) {
+  const userId = await requireAuth();
+  const { users } = await import("@/lib/schema");
+
+  const updateData: { name?: string; image?: string | null } = {};
+  if (data.name !== undefined) {
+    const trimmedName = data.name.trim();
+    if (trimmedName) updateData.name = trimmedName.slice(0, 120);
+  }
+  if (data.image !== undefined) {
+    updateData.image = data.image.trim() || null;
+  }
+
+  if (Object.keys(updateData).length === 0) return;
+
+  await db.update(users).set({
+    ...updateData,
+    updatedAt: new Date(),
+  }).where(eq(users.id, userId));
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/settings");
@@ -199,10 +276,7 @@ export async function updatePortfolioContent(content: PortfolioContent) {
   const portfolio = await getActivePortfolio(userId);
   if (!portfolio) throw new Error("Portfolio not found");
 
-  const normalizedContent: PortfolioContent = {
-    ...content,
-    visibleSections: mergeVisibleSections(content.visibleSections),
-  };
+  const normalizedContent = validatePortfolioContent(content);
 
   await db.update(portfolios).set({
     content: normalizedContent,

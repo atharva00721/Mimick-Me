@@ -18,18 +18,20 @@ export default function Footer() {
                 <div className="flex flex-col">
                     <Link
                         href="/"
-                        aria-label="go home"
-                        className="hover:bg-foreground/5 -ml-1.5 flex size-8 rounded-lg *:m-auto">
+                        aria-label="Go to home page"
+                        title="Mimick.me home"
+                        className="hover:bg-foreground/5 -ml-1.5 flex size-30 rounded-lg *:m-auto">
                         <LogoIcon
                             uniColor
                             className="w-fit"
                         />
                     </Link>
-                    <nav className="my-8 flex flex-wrap gap-x-8 gap-y-2">
+                    <nav aria-label="Footer" className="my-8 flex flex-wrap gap-x-8 gap-y-2">
                         {links.map((link) => (
                             <Link
                                 key={link.label}
                                 href={link.href}
+                                title={link.label}
                                 className="text-muted-foreground hover:text-foreground text-sm transition-colors">
                                 {link.label}
                             </Link>
@@ -38,7 +40,7 @@ export default function Footer() {
 
                     <ThemeSwitcher />
 
-                    <p className="text-muted-foreground mt-2 border-t pt-6 text-sm">&copy; {new Date().getFullYear()} ref. </p>
+                    <p className="text-muted-foreground mt-2 border-t pt-6 text-sm">&copy; {new Date().getFullYear()} Mimick.me. </p>
                 </div>
             </div>
         </footer>

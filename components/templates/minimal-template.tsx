@@ -1,15 +1,12 @@
-"use client";
+﻿"use client";
 
 import type { PortfolioContent } from "@/lib/validation/portfolio-schema";
 import { isSectionVisible, mergeVisibleSections } from "@/lib/portfolio/section-registry";
-import { Button } from "@/components/ui/button";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { MobileMenu } from "@/components/portfolio/mobile-menu";
 import { DesktopNav } from "@/components/portfolio/desktop-nav";
-import { ArrowRightIcon, ChevronDownIcon, MinusIcon, PlusIcon } from "lucide-react";
-import { AnimateIn, StaggerItem } from "@/components/animate-in";
-import { motion, AnimatePresence } from "motion/react";
-import { useState } from "react";
+import { AnimateIn, StaggerChildren, StaggerItem } from "@/components/animate-in";
+import { ArrowUpRightIcon } from "lucide-react";
 import { Twitter, Linkedin, Github, Instagram, Youtube, Facebook, Globe } from "lucide-react";
 
 const platformIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -24,12 +21,10 @@ const platformIcons: Record<string, React.ComponentType<{ className?: string }>>
 
 function SocialLinks({ socialLinks }: { socialLinks: PortfolioContent["socialLinks"] }) {
   if (!socialLinks || socialLinks.length === 0) return null;
-
-  const enabledLinks = socialLinks.filter(link => link.enabled && link.url);
+  const enabledLinks = socialLinks.filter((l) => l.enabled && l.url);
   if (enabledLinks.length === 0) return null;
-
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-5">
       {enabledLinks.map((link) => {
         const Icon = platformIcons[link.platform] || Globe;
         return (
@@ -38,10 +33,10 @@ function SocialLinks({ socialLinks }: { socialLinks: PortfolioContent["socialLin
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-stone-500 dark:text-stone-400 hover:text-stone-900 transition-colors"
+            className="text-neutral-400 dark:text-neutral-600 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
             aria-label={link.platform}
           >
-            <Icon className="size-5" />
+            <Icon className="size-4" />
           </a>
         );
       })}
@@ -49,27 +44,30 @@ function SocialLinks({ socialLinks }: { socialLinks: PortfolioContent["socialLin
   );
 }
 
+function SectionRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <AnimateIn>
+      <div className="border-t border-neutral-200 dark:border-neutral-800 pt-10 grid grid-cols-1 md:grid-cols-[120px_1fr] gap-6 md:gap-16">
+        <div className="pt-0.5">
+          <span className="text-[10px] tracking-[0.3em] uppercase text-neutral-400 dark:text-neutral-600">
+            {label}
+          </span>
+        </div>
+        <div>{children}</div>
+      </div>
+    </AnimateIn>
+  );
+}
+
 export function MinimalTemplate({ content }: { content: PortfolioContent }) {
-  const [expandedProject, setExpandedProject] = useState<number | null>(null);
-  const [expandedService, setExpandedService] = useState<number | null>(null);
-
-  const toggleProject = (index: number) => {
-    setExpandedProject(expandedProject === index ? null : index);
-  };
-
-  const toggleService = (index: number) => {
-    setExpandedService(expandedService === index ? null : index);
-  };
-
   const visibleSections = mergeVisibleSections(content.visibleSections);
 
   return (
-    <div className="bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-50 min-h-screen font-sans">
-      <header className="sticky top-0 z-30 bg-stone-50/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-6">
-          <a href="#" className="flex items-center gap-2 font-medium tracking-tight">
-            <img src="/ai-logo.png" alt="Logo" className="size-6 dark:invert" />
-            <span className="hidden sm:inline-block">{content.hero.headline.split(" ")[0]}</span>
+    <div className="bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 min-h-screen font-sans">
+      <header className="sticky top-0 z-20 bg-white/95 dark:bg-neutral-950/95 backdrop-blur-sm border-b border-neutral-200 dark:border-neutral-800">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
+          <a href="#" className="text-sm font-light tracking-widest text-neutral-900 dark:text-neutral-100">
+            {content.name || content.hero.headline}
           </a>
           <DesktopNav visibleSections={visibleSections} />
           <div className="flex items-center gap-2">
@@ -79,336 +77,264 @@ export function MinimalTemplate({ content }: { content: PortfolioContent }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-20 space-y-32">
-        {/* Hero */}
+      <main className="mx-auto max-w-4xl px-6">
         {isSectionVisible(visibleSections, "hero") && (
-          <section className="pt-10">
-            <AnimateIn from="none" duration={0.8}>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-normal tracking-tight text-stone-900 dark:text-stone-50 max-w-3xl leading-[1.1]">
+          <section className="py-24 md:py-40">
+            <AnimateIn duration={1} from="bottom">
+              <h1 className="text-[clamp(2.8rem,9vw,7rem)] font-extralight tracking-[-0.03em] leading-[1.05] text-neutral-900 dark:text-neutral-100 text-balance">
                 {content.hero.headline}
               </h1>
             </AnimateIn>
             <AnimateIn delay={0.2}>
-              <p className="mt-8 text-xl text-stone-500 dark:text-stone-400 max-w-2xl leading-relaxed">
+              <p className="mt-10 text-lg font-light text-neutral-500 dark:text-neutral-400 max-w-xl leading-relaxed">
                 {content.hero.subheadline}
               </p>
             </AnimateIn>
-            <AnimateIn delay={0.3}>
-              <div className="mt-10">
-                <Button asChild variant="outline" className="rounded-none px-6 h-12 text-sm font-medium border-stone-300 dark:border-stone-700 hover:bg-stone-900 hover:text-stone-50 transition-colors group">
-                  <a href="#contact">
-                    {content.hero.ctaText}
-                    <ArrowRightIcon className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
-                  </a>
-                </Button>
-              </div>
+            <AnimateIn delay={0.35}>
+              <a
+                href={isSectionVisible(visibleSections, "cta") ? "#contact" : "#"}
+                className="mt-10 inline-flex items-center gap-2 text-sm font-light text-neutral-900 dark:text-neutral-100 border-b border-neutral-900 dark:border-neutral-100 pb-0.5 hover:opacity-60 transition-opacity"
+              >
+                {content.hero.ctaText}
+                <ArrowUpRightIcon className="size-3.5" />
+              </a>
             </AnimateIn>
           </section>
         )}
 
-        {/* About */}
         {isSectionVisible(visibleSections, "about") && (
-          <section id="about" className="max-w-2xl">
-            <AnimateIn>
-              <h2 className="text-sm font-medium text-stone-400 dark:text-stone-500 mb-6">About</h2>
-              <p className="text-xl sm:text-2xl font-normal leading-relaxed text-stone-800 dark:text-stone-200">
+          <div id="about" className="pb-20">
+            <SectionRow label="About">
+              <p className="text-xl font-light text-neutral-600 dark:text-neutral-400 leading-[1.8] max-w-2xl">
                 {content.about.paragraph}
               </p>
-            </AnimateIn>
-          </section>
+            </SectionRow>
+          </div>
         )}
 
-        {/* Services */}
-        {isSectionVisible(visibleSections, "services") && (content.services?.length > 0) && (
-          <section id="services" className="max-w-4xl">
-            <AnimateIn>
-              <h2 className="text-sm font-medium text-stone-400 dark:text-stone-500 mb-8">Services</h2>
-            </AnimateIn>
-
-            <div className="border-t border-stone-200 dark:border-stone-800">
-              {content.services.map((service, i) => (
-                <StaggerItem key={i}>
-                  <motion.div initial={false}>
-                    <motion.button
-                      onClick={() => toggleService(i)}
-                      className="w-full flex items-center justify-between py-6 border-b border-stone-200 dark:border-stone-800 text-left hover:text-stone-600 transition-colors"
-                    >
-                      <span className="text-lg sm:text-xl font-medium">
+        {isSectionVisible(visibleSections, "services") && content.services && content.services.length > 0 && (
+          <div id="services" className="pb-20">
+            <SectionRow label="Services">
+              <div className="space-y-10">
+                {content.services.map((service, i) => (
+                  <div key={i} className="grid grid-cols-[2rem_1fr] gap-4">
+                    <span className="text-[10px] tracking-widest text-neutral-300 dark:text-neutral-700 pt-0.5 font-mono">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <div>
+                      <h3 className="text-base font-normal text-neutral-900 dark:text-neutral-100 mb-2">
                         {service.title}
-                      </span>
-                      <AnimatePresence mode="wait">
-                        {expandedService === i ? (
-                          <motion.div
-                            key="minus"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <MinusIcon className="size-5 text-stone-400 dark:text-stone-500" />
-                          </motion.div>
-                        ) : (
-                          <motion.div
-                            key="plus"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <PlusIcon className="size-5 text-stone-400 dark:text-stone-500" />
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </motion.button>
-                    <AnimatePresence>
-                      {expandedService === i && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="pb-8 pt-4 pr-12">
-                            <p className="text-stone-500 dark:text-stone-400 leading-relaxed text-lg max-w-2xl">
-                              {service.description}
-                            </p>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                </StaggerItem>
-              ))}
-            </div>
-          </section>
+                      </h3>
+                      <p className="text-sm font-light text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                        {service.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </SectionRow>
+          </div>
         )}
 
-        {/* Projects */}
-        {isSectionVisible(visibleSections, "projects") && (content.projects?.length > 0) && (
-          <section id="work">
-            <AnimateIn>
-              <h2 className="text-sm font-medium text-stone-400 dark:text-stone-500 mb-8">Selected Work</h2>
-            </AnimateIn>
-
-            <div className="border-t border-stone-200 dark:border-stone-800">
-              {content.projects.map((project, i) => (
-                <StaggerItem key={i}>
-                  <motion.div initial={false}>
-                    <motion.button
-                      onClick={() => toggleProject(i)}
-                      className="w-full flex items-center justify-between py-8 border-b border-stone-200 dark:border-stone-800 text-left hover:bg-stone-100/50 transition-colors px-4 -mx-4"
-                    >
-                      <span className="text-xl sm:text-2xl font-medium">
-                        {project.title}
-                      </span>
-                      <motion.div
-                        animate={{ rotate: expandedProject === i ? 180 : 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <ChevronDownIcon className="size-5 text-stone-400 dark:text-stone-500" />
-                      </motion.div>
-                    </motion.button>
-                    <AnimatePresence>
-                      {expandedProject === i && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="py-8 px-4 -mx-4 border-b border-stone-200 dark:border-stone-800 bg-stone-100/50">
-                            <div className="grid md:grid-cols-2 gap-8 max-w-4xl">
-                              <div>
-                                <p className="text-stone-600 dark:text-stone-400 leading-relaxed text-lg">
-                                  {project.description}
-                                </p>
-                              </div>
-                              <div>
-                                <div className="inline-block px-4 py-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-sm font-medium text-stone-700 dark:text-stone-300">
-                                  Outcome: {project.result}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
+        {isSectionVisible(visibleSections, "projects") && content.projects && content.projects.length > 0 && (
+          <div id="work" className="pb-20">
+            <SectionRow label="Work">
+              <StaggerChildren stagger={0.06} className="space-y-0">
+                {content.projects.map((project, i) => (
+                  <StaggerItem key={i}>
+                    <div className="py-8 border-b border-neutral-100 dark:border-neutral-900 last:border-0 group">
+                      <div className="flex items-start justify-between gap-4">
+                        <h3 className="text-base font-normal text-neutral-900 dark:text-neutral-100 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 transition-colors">
+                          {project.title}
+                        </h3>
+                        <span className="text-[10px] tracking-widest text-neutral-300 dark:text-neutral-700 font-mono mt-0.5 shrink-0">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm font-light text-neutral-500 dark:text-neutral-400 leading-relaxed max-w-prose">
+                        {project.description}
+                      </p>
+                      {project.result && (
+                        <p className="mt-3 text-xs tracking-wide text-neutral-400 dark:text-neutral-600">
+                          {project.result}
+                        </p>
                       )}
-                    </AnimatePresence>
-                  </motion.div>
-                </StaggerItem>
-              ))}
-            </div>
-          </section>
+                    </div>
+                  </StaggerItem>
+                ))}
+              </StaggerChildren>
+            </SectionRow>
+          </div>
         )}
 
-        {/* Products */}
         {isSectionVisible(visibleSections, "products") && content.products && content.products.length > 0 && (
-          <section id="products">
-            <AnimateIn>
-              <h2 className="text-sm font-medium text-stone-400 dark:text-stone-500 mb-8">Products</h2>
-            </AnimateIn>
-            <div className="grid sm:grid-cols-2 gap-8">
-              {content.products.map((product, i) => (
-                <StaggerItem key={i}>
-                  <div className="group border border-stone-200 dark:border-stone-800 hover:border-stone-900 transition-colors overflow-hidden flex flex-col h-full bg-white dark:bg-stone-900">
+          <div id="products" className="pb-20">
+            <SectionRow label="Products">
+              <div className="space-y-12">
+                {content.products.map((product, i) => (
+                  <div key={i} className="border-t border-neutral-100 dark:border-neutral-900 pt-8 first:border-0 first:pt-0">
                     {product.image && (
-                      <div className="aspect-[4/3] w-full relative overflow-hidden bg-stone-100 dark:bg-stone-900">
+                      <div className="mb-6 aspect-[16/6] overflow-hidden bg-neutral-50 dark:bg-neutral-900">
                         <img
                           src={product.image}
                           alt={product.title}
-                          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                          className="object-cover w-full h-full grayscale hover:grayscale-0 transition-all duration-700"
                         />
                       </div>
                     )}
-                    <div className="p-6 flex flex-col flex-grow">
-                      <div className="flex items-start justify-between gap-4 mb-2">
-                        <h3 className="text-lg font-medium tracking-tight">{product.title}</h3>
-                        <span className="text-sm font-medium bg-stone-100 dark:bg-stone-900 px-2.5 py-1 text-stone-600 dark:text-stone-400 shrink-0">{product.price}</span>
-                      </div>
-                      <p className="text-stone-500 dark:text-stone-400 text-sm leading-relaxed mb-6 flex-grow">{product.description}</p>
-                      {product.url && (
-                        <a
-                          href={product.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium inline-flex items-center text-stone-900 dark:text-stone-50 hover:text-stone-600 transition-colors mt-auto w-fit"
-                        >
-                          View Product <ArrowRightIcon className="ml-1 size-3.5" />
-                        </a>
-                      )}
+                    <div className="flex items-baseline justify-between gap-4 mb-3">
+                      <h3 className="text-base font-normal text-neutral-900 dark:text-neutral-100">
+                        {product.title}
+                      </h3>
+                      <span className="text-xs font-light text-neutral-400 shrink-0">{product.price}</span>
                     </div>
-                  </div>
-                </StaggerItem>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* History */}
-        {isSectionVisible(visibleSections, "history") && content.history && content.history.length > 0 && (
-          <section id="history" className="max-w-4xl">
-            <AnimateIn>
-              <h2 className="text-sm font-medium text-stone-400 dark:text-stone-500 mb-8">Experience & History</h2>
-            </AnimateIn>
-            <div className="space-y-12 border-l border-stone-200 dark:border-stone-800 ml-3 pl-8">
-              {content.history.map((item, i) => (
-                <StaggerItem key={i}>
-                  <div className="relative">
-                    <div className="absolute -left-[41px] top-1.5 size-3 rounded-full border-2 border-stone-900 bg-stone-50 dark:bg-stone-950"></div>
-                    <p className="text-sm font-medium text-stone-400 dark:text-stone-500 mb-2">{item.period}</p>
-                    <h3 className="text-xl font-medium tracking-tight mb-1">{item.role}</h3>
-                    <p className="text-lg text-stone-600 dark:text-stone-400 mb-4">{item.company}</p>
-                    <p className="text-stone-500 dark:text-stone-400 leading-relaxed max-w-2xl">{item.description}</p>
-                  </div>
-                </StaggerItem>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Testimonials */}
-        {isSectionVisible(visibleSections, "testimonials") && content.testimonials && content.testimonials.length > 0 && (
-          <section id="testimonials">
-            <AnimateIn>
-              <h2 className="text-sm font-medium text-stone-400 dark:text-stone-500 mb-8">Testimonials</h2>
-            </AnimateIn>
-            <div className="grid sm:grid-cols-2 gap-8">
-              {content.testimonials.map((t, i) => (
-                <StaggerItem key={i}>
-                  <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-8 h-full flex flex-col">
-                    <div className="text-stone-300 dark:text-stone-600 mb-4">
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M14.017 18L14.017 10.609C14.017 4.905 17.748 1.039 23 0L23.995 2.151C21.563 3.068 20 5.789 20 8H24V18H14.017ZM0 18V10.609C0 4.905 3.748 1.038 9 0L9.996 2.151C7.563 3.068 6 5.789 6 8H9.983L9.983 18L0 18Z" fill="currentColor" />
-                      </svg>
-                    </div>
-                    <p className="text-lg text-stone-800 dark:text-stone-200 leading-relaxed italic flex-grow mb-6">"{t.quote}"</p>
-                    <div>
-                      <p className="font-medium text-stone-900 dark:text-stone-50">{t.author}</p>
-                      {t.role && <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">{t.role}</p>}
-                    </div>
-                  </div>
-                </StaggerItem>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* FAQ */}
-        {isSectionVisible(visibleSections, "faq") && content.faq && content.faq.length > 0 && (
-          <section id="faq" className="max-w-3xl">
-            <AnimateIn>
-              <h2 className="text-sm font-medium text-stone-400 dark:text-stone-500 mb-8">Frequently Asked Questions</h2>
-            </AnimateIn>
-            <div className="space-y-6">
-              {content.faq.map((f, i) => (
-                <StaggerItem key={i}>
-                  <div className="border-b border-stone-200 dark:border-stone-800 pb-6">
-                    <h3 className="text-lg font-medium text-stone-900 dark:text-stone-50 mb-3">{f.question}</h3>
-                    <p className="text-stone-500 dark:text-stone-400 leading-relaxed">{f.answer}</p>
-                  </div>
-                </StaggerItem>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Gallery */}
-        {isSectionVisible(visibleSections, "gallery") && content.gallery && content.gallery.length > 0 && (
-          <section id="gallery">
-            <AnimateIn>
-              <h2 className="text-sm font-medium text-stone-400 dark:text-stone-500 mb-8">Gallery</h2>
-            </AnimateIn>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
-              {content.gallery.map((g, i) => (
-                <StaggerItem key={i}>
-                  <div className="group relative aspect-square overflow-hidden bg-stone-100 dark:bg-stone-900">
-                    <img
-                      src={g.url}
-                      alt={g.caption}
-                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-700"
-                    />
-                    {g.caption && (
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                        <p className="text-white text-sm font-medium translate-y-4 group-hover:translate-y-0 transition-transform duration-300">{g.caption}</p>
-                      </div>
+                    <p className="text-sm font-light text-neutral-500 dark:text-neutral-400 leading-relaxed mb-4">
+                      {product.description}
+                    </p>
+                    {product.url && (
+                      <a
+                        href={product.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs tracking-wide text-neutral-900 dark:text-neutral-100 border-b border-neutral-300 dark:border-neutral-700 pb-px hover:opacity-60 transition-opacity"
+                      >
+                        View <ArrowUpRightIcon className="size-3" />
+                      </a>
                     )}
                   </div>
-                </StaggerItem>
-              ))}
-            </div>
-          </section>
+                ))}
+              </div>
+            </SectionRow>
+          </div>
         )}
 
-        {/* CTA */}
+        {isSectionVisible(visibleSections, "history") && content.history && content.history.length > 0 && (
+          <div id="history" className="pb-20">
+            <SectionRow label="Experience">
+              <div className="space-y-0">
+                {content.history.map((item, i) => (
+                  <AnimateIn key={i} delay={i * 0.08} from="bottom">
+                    <div className="py-7 border-b border-neutral-100 dark:border-neutral-900 last:border-0 grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-3 sm:gap-8">
+                      <span className="text-xs font-light text-neutral-400 dark:text-neutral-600 mt-0.5">
+                        {item.period}
+                      </span>
+                      <div>
+                        <div className="flex flex-wrap items-baseline gap-2 mb-2">
+                          <span className="text-sm font-normal text-neutral-900 dark:text-neutral-100">{item.role}</span>
+                          <span className="text-xs font-light text-neutral-400">{item.company}</span>
+                        </div>
+                        <p className="text-sm font-light text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                          {item.description}
+                        </p>
+                      </div>
+                    </div>
+                  </AnimateIn>
+                ))}
+              </div>
+            </SectionRow>
+          </div>
+        )}
+
+        {isSectionVisible(visibleSections, "testimonials") && content.testimonials && content.testimonials.length > 0 && (
+          <div id="testimonials" className="pb-20">
+            <SectionRow label="Testimonials">
+              <div className="space-y-12">
+                {content.testimonials.map((t, i) => (
+                  <AnimateIn key={i} delay={i * 0.1}>
+                    <blockquote>
+                      <p className="text-xl font-light italic text-neutral-600 dark:text-neutral-400 leading-[1.7] mb-6">
+                        &ldquo;{t.quote}&rdquo;
+                      </p>
+                      <footer className="text-[10px] tracking-[0.25em] uppercase text-neutral-400">
+                        {t.author}{t.role && `, ${t.role}`}
+                      </footer>
+                    </blockquote>
+                  </AnimateIn>
+                ))}
+              </div>
+            </SectionRow>
+          </div>
+        )}
+
+        {isSectionVisible(visibleSections, "faq") && content.faq && content.faq.length > 0 && (
+          <div id="faq" className="pb-20">
+            <SectionRow label="FAQ">
+              <div className="space-y-0">
+                {content.faq.map((f, i) => (
+                  <AnimateIn key={i} delay={i * 0.07} from="bottom">
+                    <div className="py-7 border-b border-neutral-100 dark:border-neutral-900 last:border-0">
+                      <h3 className="text-sm font-normal text-neutral-900 dark:text-neutral-100 mb-3">
+                        {f.question}
+                      </h3>
+                      <p className="text-sm font-light text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                        {f.answer}
+                      </p>
+                    </div>
+                  </AnimateIn>
+                ))}
+              </div>
+            </SectionRow>
+          </div>
+        )}
+
+        {isSectionVisible(visibleSections, "gallery") && content.gallery && content.gallery.length > 0 && (
+          <div id="gallery" className="pb-20">
+            <SectionRow label="Gallery">
+              <StaggerChildren stagger={0.06} className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {content.gallery.map((g, i) => (
+                  <StaggerItem key={i}>
+                    <div className="group relative aspect-square overflow-hidden bg-neutral-50 dark:bg-neutral-900">
+                      <img
+                        src={g.url}
+                        alt={g.caption}
+                        className="object-cover w-full h-full grayscale group-hover:grayscale-0 transition-all duration-700"
+                      />
+                      {g.caption && (
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3">
+                          <p className="text-[10px] font-light text-white bg-black/60 px-2 py-1 backdrop-blur-sm">
+                            {g.caption}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </StaggerItem>
+                ))}
+              </StaggerChildren>
+            </SectionRow>
+          </div>
+        )}
+
         {isSectionVisible(visibleSections, "cta") && (
-          <section id="contact" className="py-20">
-            <AnimateIn>
-              <div className="max-w-2xl">
-                <h2 className="text-3xl sm:text-4xl font-medium text-stone-900 dark:text-stone-50 mb-6">
+          <div id="contact" className="pb-32">
+            <SectionRow label="Contact">
+              <div className="space-y-6">
+                <h2 className="text-3xl font-extralight tracking-tight text-neutral-900 dark:text-neutral-100 text-balance">
                   {content.cta.headline}
                 </h2>
-                <p className="text-stone-500 dark:text-stone-400 text-lg leading-relaxed mb-8">
+                <p className="text-sm font-light text-neutral-500 dark:text-neutral-400 leading-relaxed max-w-sm">
                   {content.cta.subtext}
                 </p>
-                <Button asChild variant="outline" className="rounded-none px-8 h-12 font-medium border-stone-300 dark:border-stone-700 hover:bg-stone-900 hover:text-stone-50 transition-colors group">
-                  <a href="#contact">
-                    {content.hero.ctaText}
-                    <ArrowRightIcon className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
-                  </a>
-                </Button>
+                <a
+                  href="#contact"
+                  className="inline-flex items-center gap-2 text-sm font-light text-neutral-900 dark:text-neutral-100 border-b border-neutral-900 dark:border-neutral-100 pb-0.5 hover:opacity-60 transition-opacity"
+                >
+                  {content.hero.ctaText}
+                  <ArrowUpRightIcon className="size-3.5" />
+                </a>
               </div>
-            </AnimateIn>
-          </section>
+            </SectionRow>
+          </div>
         )}
       </main>
 
-      <footer className="border-t border-stone-200 dark:border-stone-800 py-8 mt-20">
-        <div className="mx-auto max-w-5xl px-6 flex items-center justify-between text-sm text-stone-500 dark:text-stone-400">
-          <span>© {new Date().getFullYear()}</span>
-          <div className="flex items-center gap-4">
+      <footer className="border-t border-neutral-200 dark:border-neutral-800 py-7">
+        <div className="mx-auto max-w-4xl px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs font-light text-neutral-400 dark:text-neutral-600">
+            &copy; {new Date().getFullYear()} {content.name || content.hero.headline}
+          </p>
+          <div className="flex items-center gap-6">
             <SocialLinks socialLinks={content.socialLinks} />
-            <a href="#" className="hover:text-stone-900 transition-colors">Back to top</a>
+            <ThemeSwitcher />
           </div>
         </div>
       </footer>

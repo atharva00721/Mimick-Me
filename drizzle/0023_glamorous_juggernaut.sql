@@ -1,0 +1,1 @@
+ALTER TABLE "agents" ADD COLUMN "notification_email" varchar(255);

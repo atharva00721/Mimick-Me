@@ -1,47 +1,31 @@
-"use client";
+﻿"use client";
 
 import type { PortfolioContent } from "@/lib/validation/portfolio-schema";
 import { isSectionVisible, mergeVisibleSections } from "@/lib/portfolio/section-registry";
-import { Button } from "@/components/ui/button";
-import { ArrowRightIcon } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { LogoIcon } from "@/components/logo";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { MobileMenu } from "@/components/portfolio/mobile-menu";
 import { DesktopNav } from "@/components/portfolio/desktop-nav";
 import { AnimateIn, StaggerChildren, StaggerItem } from "@/components/animate-in";
+import { ArrowUpRightIcon } from "lucide-react";
 import { Twitter, Linkedin, Github, Instagram, Youtube, Facebook, Globe } from "lucide-react";
 
 const platformIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  twitter: Twitter,
-  linkedin: Linkedin,
-  github: Github,
-  instagram: Instagram,
-  youtube: Youtube,
-  facebook: Facebook,
-  website: Globe,
+  twitter: Twitter, linkedin: Linkedin, github: Github, instagram: Instagram,
+  youtube: Youtube, facebook: Facebook, website: Globe,
 };
 
 function SocialLinks({ socialLinks }: { socialLinks: PortfolioContent["socialLinks"] }) {
   if (!socialLinks || socialLinks.length === 0) return null;
-
-  const enabledLinks = socialLinks.filter(link => link.enabled && link.url);
+  const enabledLinks = socialLinks.filter((l) => l.enabled && l.url);
   if (enabledLinks.length === 0) return null;
-
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-5">
       {enabledLinks.map((link) => {
         const Icon = platformIcons[link.platform] || Globe;
         return (
-          <a
-            key={link.platform}
-            href={link.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label={link.platform}
-          >
-            <Icon className="size-5" />
+          <a key={link.platform} href={link.url} target="_blank" rel="noopener noreferrer"
+            className="text-neutral-700 hover:text-neutral-300 transition-colors duration-500" aria-label={link.platform}>
+            <Icon className="size-4" />
           </a>
         );
       })}
@@ -53,64 +37,50 @@ export function VeilTemplate({ content }: { content: PortfolioContent }) {
   const visibleSections = mergeVisibleSections(content.visibleSections);
 
   return (
-    <div className="font-sans antialiased text-foreground bg-background min-h-screen">
-      <header className="sticky top-0 z-20 bg-background/90 backdrop-blur-sm border-b border-border/50">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-5">
-          <a href="#" aria-label="Back to top" className="flex items-center gap-2">
-            <LogoIcon uniColor className="size-5 opacity-80" />
-            <span className="text-sm font-medium tracking-wide">Veil</span>
+    <div className="bg-[#080808] text-neutral-300 min-h-screen font-sans">
+      <header className="sticky top-0 z-20 bg-[#080808]/90 backdrop-blur-sm border-b border-[#141414]">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
+          <a href="#" className="text-xs tracking-[0.2em] text-neutral-400 hover:text-neutral-200 transition-colors lowercase">
+            {content.name || content.hero.headline}
           </a>
           <DesktopNav visibleSections={visibleSections} />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 opacity-40 hover:opacity-100 transition-opacity">
             <ThemeSwitcher />
             <MobileMenu visibleSections={visibleSections} />
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-5xl px-6 py-16 sm:py-24">
-        {/* Hero */}
+      <main className="mx-auto max-w-5xl px-6">
+
         {isSectionVisible(visibleSections, "hero") && (
-          <section className="space-y-8 max-w-3xl pt-8 sm:pt-16">
-            <AnimateIn from="bottom" duration={0.8}>
-              <h1 className="text-balance font-serif text-5xl sm:text-6xl md:text-7xl font-medium tracking-tight leading-[1.1] text-foreground">
+          <section className="pt-32 pb-40">
+            <AnimateIn duration={1.2} from="bottom">
+              <h1 className="text-[clamp(3rem,11vw,9rem)] font-thin tracking-[-0.04em] leading-[0.95] text-neutral-100 text-balance">
                 {content.hero.headline}
               </h1>
             </AnimateIn>
-            <AnimateIn from="bottom" delay={0.1} duration={0.8}>
-              <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-2xl text-balance">
+            <AnimateIn delay={0.3} duration={1}>
+              <p className="mt-14 text-base text-neutral-600 max-w-md leading-relaxed font-light">
                 {content.hero.subheadline}
               </p>
             </AnimateIn>
-            <AnimateIn from="none" delay={0.2}>
-              <div className="pt-6 flex flex-wrap items-center gap-4">
-                <Button asChild size="lg" variant="default" className="h-12 px-8 text-base">
-                  <a href={isSectionVisible(visibleSections, "cta") ? "#contact" : "#"}>
-                    {content.hero.ctaText}
-                  </a>
-                </Button>
-                {isSectionVisible(visibleSections, "projects") && (
-                  <a
-                    href="#work"
-                    className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
-                  >
-                    View selected work
-                  </a>
-                )}
-              </div>
+            <AnimateIn delay={0.5}>
+              <a href={isSectionVisible(visibleSections, "cta") ? "#contact" : "#"}
+                className="mt-12 inline-flex items-center gap-2 text-xs tracking-[0.25em] uppercase text-neutral-600 hover:text-neutral-300 transition-colors duration-500">
+                {content.hero.ctaText}
+                <ArrowUpRightIcon className="size-3" />
+              </a>
             </AnimateIn>
           </section>
         )}
 
-        {/* About */}
         {isSectionVisible(visibleSections, "about") && (
-          <section id="about" className="mt-24 sm:mt-32">
+          <section id="about" className="py-20 border-t border-[#141414]">
             <AnimateIn>
-              <div className="max-w-3xl">
-                <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-8">
-                  About
-                </h2>
-                <p className="text-xl sm:text-2xl leading-relaxed text-balance text-foreground font-serif">
+              <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-8">
+                <span className="text-[9px] tracking-[0.4em] uppercase text-neutral-700 pt-1">About</span>
+                <p className="text-lg font-light text-neutral-500 leading-[1.9] max-w-2xl">
                   {content.about.paragraph}
                 </p>
               </div>
@@ -118,183 +88,108 @@ export function VeilTemplate({ content }: { content: PortfolioContent }) {
           </section>
         )}
 
-        {/* Services */}
         {isSectionVisible(visibleSections, "services") && content.services && content.services.length > 0 && (
-          <section id="services" className="mt-24 sm:mt-32">
-            <AnimateIn from="none">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-8">
-                Services
-              </h2>
+          <section id="services" className="py-20 border-t border-[#141414]">
+            <AnimateIn>
+              <span className="text-[9px] tracking-[0.4em] uppercase text-neutral-700 block mb-12">Services</span>
             </AnimateIn>
-            <StaggerChildren stagger={0.1} className="grid sm:grid-cols-2 gap-8 lg:gap-12">
+            <div className="space-y-0">
               {content.services.map((service, i) => (
-                <StaggerItem key={i}>
-                  <div className="space-y-3">
-                    <h3 className="text-xl font-medium text-foreground">{service.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {service.description}
-                    </p>
+                <AnimateIn key={i} delay={i * 0.08}>
+                  <div className="py-7 border-b border-[#141414] last:border-0 group flex items-start gap-8">
+                    <span className="text-[10px] text-neutral-800 font-mono mt-1 shrink-0">{String(i + 1).padStart(2, "0")}</span>
+                    <div>
+                      <h3 className="text-sm text-neutral-300 group-hover:text-neutral-100 transition-colors duration-500 mb-2">
+                        {service.title}
+                      </h3>
+                      <p className="text-sm text-neutral-700 leading-relaxed font-light">{service.description}</p>
+                    </div>
                   </div>
-                </StaggerItem>
+                </AnimateIn>
               ))}
-            </StaggerChildren>
+            </div>
           </section>
         )}
 
-        {/* Projects */}
         {isSectionVisible(visibleSections, "projects") && content.projects && content.projects.length > 0 && (
-          <section id="work" className="mt-24 sm:mt-32">
-            <AnimateIn from="none">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-8">
-                Selected Work
-              </h2>
+          <section id="work" className="py-20 border-t border-[#141414]">
+            <AnimateIn>
+              <span className="text-[9px] tracking-[0.4em] uppercase text-neutral-700 block mb-12">Work</span>
             </AnimateIn>
-            <div className="space-y-16">
+            <StaggerChildren stagger={0.08} className="space-y-0">
               {content.projects.map((project, i) => (
-                <AnimateIn key={i} delay={i * 0.1}>
-                  <div className="group flex flex-col md:flex-row gap-6 md:gap-12 lg:gap-16 border-t border-border/50 pt-8">
-                    <div className="md:w-1/3 shrink-0 space-y-2">
-                      <h3 className="text-2xl font-serif font-medium text-foreground">
+                <StaggerItem key={i}>
+                  <div className="py-8 border-b border-[#141414] last:border-0 group">
+                    <div className="flex items-start justify-between gap-8">
+                      <h3 className="text-xl font-light text-neutral-600 group-hover:text-neutral-200 transition-colors duration-700 tracking-tight">
                         {project.title}
                       </h3>
-                      <p className="text-sm text-muted-foreground">
-                        {project.result}
-                      </p>
+                      <span className="text-[10px] font-mono text-neutral-800 mt-1.5 shrink-0">{String(i + 1).padStart(2, "0")}</span>
                     </div>
-                    <div className="md:w-2/3">
-                      <p className="text-muted-foreground leading-relaxed text-lg">
-                        {project.description}
-                      </p>
-                    </div>
+                    <p className="mt-4 text-sm text-neutral-800 group-hover:text-neutral-600 leading-relaxed font-light max-w-2xl transition-colors duration-700">
+                      {project.description}
+                    </p>
+                    {project.result && (
+                      <p className="mt-3 text-xs text-neutral-800 font-light italic">{project.result}</p>
+                    )}
                   </div>
-                </AnimateIn>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerChildren>
           </section>
         )}
 
-        {/* Products */}
         {isSectionVisible(visibleSections, "products") && content.products && content.products.length > 0 && (
-          <section id="products" className="mt-24 sm:mt-32">
-            <AnimateIn from="none">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-8">
-                Products
-              </h2>
+          <section id="products" className="py-20 border-t border-[#141414]">
+            <AnimateIn>
+              <span className="text-[9px] tracking-[0.4em] uppercase text-neutral-700 block mb-12">Products</span>
             </AnimateIn>
-            <StaggerChildren stagger={0.1} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid sm:grid-cols-2 gap-8">
               {content.products.map((product, i) => (
-                <StaggerItem key={i}>
-                  <Card className="flex flex-col h-full overflow-hidden bg-background border-border/50 hover:border-foreground/30 transition-colors group">
+                <AnimateIn key={i} delay={i * 0.08}>
+                  <div className="group border border-[#141414] hover:border-neutral-700 transition-colors duration-700">
                     {product.image && (
-                      <div className="aspect-[4/3] w-full overflow-hidden bg-muted">
-                        <img
-                          src={product.image}
-                          alt={product.title}
-                          className="object-cover w-full h-full grayscale group-hover:grayscale-0 transition-transform duration-500 group-hover:scale-105"
-                        />
+                      <div className="aspect-[16/9] overflow-hidden bg-neutral-900">
+                        <img src={product.image} alt={product.title}
+                          className="object-cover w-full h-full grayscale group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-105" />
                       </div>
                     )}
-                    <div className="p-6 flex flex-col flex-grow">
-                      <div className="flex items-start justify-between gap-4 mb-2">
-                        <h3 className="text-lg font-medium text-foreground">{product.title}</h3>
-                        <span className="text-sm font-medium text-muted-foreground">{product.price}</span>
+                    <div className="p-6">
+                      <div className="flex items-baseline justify-between gap-4 mb-3">
+                        <h3 className="text-sm text-neutral-400 group-hover:text-neutral-200 transition-colors duration-500">{product.title}</h3>
+                        <span className="text-xs font-mono text-neutral-700">{product.price}</span>
                       </div>
-                      <p className="text-muted-foreground text-sm leading-relaxed mb-6 flex-grow">{product.description}</p>
+                      <p className="text-xs text-neutral-700 leading-relaxed mb-4 font-light">{product.description}</p>
                       {product.url && (
-                        <div className="pt-4 border-t border-border/50 mt-auto">
-                          <a
-                            href={product.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm font-medium group/link flex items-center text-muted-foreground hover:text-foreground transition-colors w-fit"
-                          >
-                            View Product
-                            <ArrowRightIcon className="ml-1 size-3.5 transition-transform group-hover/link:translate-x-1" />
-                          </a>
-                        </div>
+                        <a href={product.url} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-[10px] tracking-[0.2em] uppercase text-neutral-700 hover:text-neutral-400 transition-colors duration-500">
+                          View <ArrowUpRightIcon className="size-3" />
+                        </a>
                       )}
                     </div>
-                  </Card>
-                </StaggerItem>
+                  </div>
+                </AnimateIn>
               ))}
-            </StaggerChildren>
+            </div>
           </section>
         )}
 
-        {/* History */}
         {isSectionVisible(visibleSections, "history") && content.history && content.history.length > 0 && (
-          <section id="history" className="mt-24 sm:mt-32">
-            <AnimateIn from="none">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-8">
-                Experience
-              </h2>
+          <section id="history" className="py-20 border-t border-[#141414]">
+            <AnimateIn>
+              <span className="text-[9px] tracking-[0.4em] uppercase text-neutral-700 block mb-12">Experience</span>
             </AnimateIn>
-            <div className="space-y-12">
+            <div className="space-y-0">
               {content.history.map((item, i) => (
-                <AnimateIn key={i} delay={i * 0.1}>
-                  <div className="flex flex-col md:flex-row gap-4 md:gap-12 lg:gap-16 border-t border-border/50 pt-8">
-                    <div className="md:w-1/3 shrink-0">
-                      <p className="text-sm font-medium text-muted-foreground">{item.period}</p>
-                    </div>
-                    <div className="md:w-2/3 space-y-2">
-                      <h3 className="text-xl font-medium text-foreground">{item.role}</h3>
-                      <p className="text-base text-foreground/80 font-medium mb-4">{item.company}</p>
-                      <p className="text-muted-foreground leading-relaxed text-lg">
-                        {item.description}
-                      </p>
-                    </div>
-                  </div>
-                </AnimateIn>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Testimonials */}
-        {isSectionVisible(visibleSections, "testimonials") && content.testimonials && content.testimonials.length > 0 && (
-          <section id="testimonials" className="mt-24 sm:mt-32">
-            <AnimateIn from="none">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-8">
-                What Clients Say
-              </h2>
-            </AnimateIn>
-            <StaggerChildren stagger={0.1} className="grid md:grid-cols-2 gap-8">
-              {content.testimonials.map((t, i) => (
-                <StaggerItem key={i}>
-                  <div className="space-y-6">
-                    <p className="text-2xl sm:text-3xl font-serif text-foreground leading-[1.3] text-balance">
-                      "{t.quote}"
-                    </p>
+                <AnimateIn key={i} delay={i * 0.08} from="bottom">
+                  <div className="py-6 border-b border-[#141414] last:border-0 grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-4 sm:gap-12">
                     <div>
-                      <p className="font-medium text-foreground">{t.author}</p>
-                      {t.role && <p className="text-sm text-muted-foreground">{t.role}</p>}
+                      <span className="text-[10px] text-neutral-700 font-mono block">{item.period}</span>
+                      <span className="text-xs text-neutral-600 mt-1 block">{item.company}</span>
                     </div>
-                  </div>
-                </StaggerItem>
-              ))}
-            </StaggerChildren>
-          </section>
-        )}
-
-        {/* FAQ */}
-        {isSectionVisible(visibleSections, "faq") && content.faq && content.faq.length > 0 && (
-          <section id="faq" className="mt-24 sm:mt-32">
-            <AnimateIn from="none">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-8">
-                FAQ
-              </h2>
-            </AnimateIn>
-            <div className="space-y-8">
-              {content.faq.map((f, i) => (
-                <AnimateIn key={i} delay={i * 0.1}>
-                  <div className="flex flex-col md:flex-row gap-4 md:gap-12 lg:gap-16 border-t border-border/50 pt-8">
-                    <div className="md:w-1/3 shrink-0">
-                      <h3 className="text-lg font-medium text-foreground">{f.question}</h3>
-                    </div>
-                    <div className="md:w-2/3">
-                      <p className="text-muted-foreground leading-relaxed text-lg">
-                        {f.answer}
-                      </p>
+                    <div>
+                      <h3 className="text-sm font-normal text-neutral-400 mb-2">{item.role}</h3>
+                      <p className="text-sm text-neutral-700 leading-relaxed font-light">{item.description}</p>
                     </div>
                   </div>
                 </AnimateIn>
@@ -303,27 +198,61 @@ export function VeilTemplate({ content }: { content: PortfolioContent }) {
           </section>
         )}
 
-        {/* Gallery */}
-        {isSectionVisible(visibleSections, "gallery") && content.gallery && content.gallery.length > 0 && (
-          <section id="gallery" className="mt-24 sm:mt-32">
-            <AnimateIn from="none">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-8">
-                Gallery
-              </h2>
+        {isSectionVisible(visibleSections, "testimonials") && content.testimonials && content.testimonials.length > 0 && (
+          <section id="testimonials" className="py-20 border-t border-[#141414]">
+            <AnimateIn>
+              <span className="text-[9px] tracking-[0.4em] uppercase text-neutral-700 block mb-16">Testimonials</span>
             </AnimateIn>
-            <StaggerChildren stagger={0.1} className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-16">
+              {content.testimonials.map((t, i) => (
+                <AnimateIn key={i} delay={i * 0.12}>
+                  <blockquote className="max-w-3xl">
+                    <p className="text-2xl font-thin text-neutral-600 leading-[1.6] italic tracking-tight mb-6">
+                      &ldquo;{t.quote}&rdquo;
+                    </p>
+                    <footer className="text-[10px] tracking-[0.3em] uppercase text-neutral-800">
+                      {t.author}{t.role && ` — ${t.role}`}
+                    </footer>
+                  </blockquote>
+                </AnimateIn>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {isSectionVisible(visibleSections, "faq") && content.faq && content.faq.length > 0 && (
+          <section id="faq" className="py-20 border-t border-[#141414]">
+            <AnimateIn>
+              <span className="text-[9px] tracking-[0.4em] uppercase text-neutral-700 block mb-12">FAQ</span>
+            </AnimateIn>
+            <div className="space-y-0">
+              {content.faq.map((f, i) => (
+                <AnimateIn key={i} delay={i * 0.07} from="bottom">
+                  <div className="py-6 border-b border-[#141414] last:border-0">
+                    <h3 className="text-sm text-neutral-500 mb-3 font-light">{f.question}</h3>
+                    <p className="text-sm text-neutral-700 leading-relaxed font-light">{f.answer}</p>
+                  </div>
+                </AnimateIn>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {isSectionVisible(visibleSections, "gallery") && content.gallery && content.gallery.length > 0 && (
+          <section id="gallery" className="py-20 border-t border-[#141414]">
+            <AnimateIn>
+              <span className="text-[9px] tracking-[0.4em] uppercase text-neutral-700 block mb-12">Gallery</span>
+            </AnimateIn>
+            <StaggerChildren stagger={0.05} className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {content.gallery.map((g, i) => (
                 <StaggerItem key={i}>
-                  <div className="group space-y-3">
-                    <div className="aspect-[4/5] overflow-hidden bg-muted">
-                      <img
-                        src={g.url}
-                        alt={g.caption}
-                        className="object-cover w-full h-full grayscale group-hover:grayscale-0 transition-all duration-500"
-                      />
-                    </div>
+                  <div className="group relative aspect-square overflow-hidden bg-neutral-900">
+                    <img src={g.url} alt={g.caption}
+                      className="object-cover w-full h-full grayscale group-hover:grayscale-0 opacity-50 group-hover:opacity-70 transition-all duration-1000" />
                     {g.caption && (
-                      <p className="text-sm text-muted-foreground">{g.caption}</p>
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 flex items-end p-3">
+                        <p className="text-[9px] tracking-widest uppercase text-neutral-500">{g.caption}</p>
+                      </div>
                     )}
                   </div>
                 </StaggerItem>
@@ -332,42 +261,39 @@ export function VeilTemplate({ content }: { content: PortfolioContent }) {
           </section>
         )}
 
-        {/* CTA */}
         {isSectionVisible(visibleSections, "cta") && (
-          <section id="contact" className="mt-24 sm:mt-32">
+          <section id="contact" className="py-32 border-t border-[#141414]">
             <AnimateIn>
-              <div className="py-16 sm:py-24 border-y border-border/50">
-                <div className="max-w-2xl space-y-8">
-                  <h2 className="text-balance font-serif text-4xl sm:text-5xl font-medium tracking-tight text-foreground">
-                    {content.cta.headline}
-                  </h2>
-                  <p className="text-xl text-muted-foreground leading-relaxed text-balance">
-                    {content.cta.subtext}
-                  </p>
-                  <div className="pt-4">
-                    <Button asChild size="lg" className="h-14 px-10 text-base group">
-                      <a href="#contact">
-                        {content.hero.ctaText}
-                        <ArrowRightIcon className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
-                      </a>
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              <span className="text-[9px] tracking-[0.4em] uppercase text-neutral-700 block mb-12">Contact</span>
+              <h2 className="text-3xl font-thin text-neutral-400 leading-[1.3] tracking-tight mb-8 max-w-xl text-balance">
+                {content.cta.headline}
+              </h2>
+              <p className="text-sm text-neutral-700 font-light leading-relaxed mb-10 max-w-sm">
+                {content.cta.subtext}
+              </p>
+              <a href="#contact"
+                className="inline-flex items-center gap-2 text-[10px] tracking-[0.3em] uppercase text-neutral-700 hover:text-neutral-400 transition-colors duration-500 border border-[#1a1a1a] hover:border-neutral-700 px-6 py-3">
+                {content.hero.ctaText}
+                <ArrowUpRightIcon className="size-3" />
+              </a>
             </AnimateIn>
           </section>
         )}
+      </main>
 
-        <footer className="mt-16 flex items-center justify-between gap-4 text-sm text-muted-foreground pb-8">
-          <span>&copy; {new Date().getFullYear()}</span>
-          <div className="flex items-center gap-4">
+      <footer className="border-t border-[#141414] py-7">
+        <div className="mx-auto max-w-5xl px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-[9px] tracking-[0.3em] uppercase text-neutral-800">
+            &copy; {new Date().getFullYear()} {content.name || content.hero.headline}
+          </p>
+          <div className="flex items-center gap-6">
             <SocialLinks socialLinks={content.socialLinks} />
-            <a href="#" className="hover:text-foreground transition-colors">
-              Back to top
-            </a>
+            <div className="opacity-30 hover:opacity-60 transition-opacity">
+              <ThemeSwitcher />
+            </div>
           </div>
-        </footer>
-      </div>
+        </div>
+      </footer>
     </div>
   );
 }

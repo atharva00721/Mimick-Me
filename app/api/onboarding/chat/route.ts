@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/auth";
+import { getSession } from "@/lib/auth/server";
 import { streamOnboardingChat } from "@/lib/ai/onboarding-agent";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -8,8 +8,10 @@ import { withDefaultSelectedSections, type OnboardingData } from "@/lib/onboardi
 import type { UIMessage } from "ai";
 import { getFileBuffer, getKeyFromUrl } from "@/lib/storage/s3";
 import { extractTextFromPdf } from "@/lib/knowledge/extract-pdf";
+import { consumeCredits, getCredits } from "@/lib/credits";
 
 export const maxDuration = 60;
+const CREDIT_COST = 1;
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -83,9 +85,13 @@ export async function POST(request: Request) {
               }
 
               if (!buffer) {
+                console.log(`[onboarding] S3 failed, fetching public URL: ${pdfUrl}`);
                 const resp = await fetch(pdfUrl);
                 if (resp.ok) {
                   buffer = Buffer.from(await resp.arrayBuffer());
+                  console.log(`[onboarding] Public URL fetch succeeded, buffer size: ${buffer.length}`);
+                } else {
+                  console.warn(`[onboarding] Public URL fetch failed: ${resp.status} ${resp.statusText}`);
                 }
               }
 
@@ -96,6 +102,8 @@ export async function POST(request: Request) {
                 console.log(
                   `[onboarding] Extracted ${resumeText.length} chars from resume (${extraction.pageCount} pages)`
                 );
+              } else {
+                console.warn(`[onboarding] Buffer is null — resume will NOT be passed to the AI!`);
               }
 
               // 3. Strip the resume marker from the user message
@@ -120,12 +128,22 @@ export async function POST(request: Request) {
   }
 
   try {
+    const currentCredits = await getCredits(session.user.id);
+    if (currentCredits < CREDIT_COST) {
+      return NextResponse.json({ error: "Not enough credits" }, { status: 402 });
+    }
+
     const result = await streamOnboardingChat({
       userId: session.user.id,
       messages,
       collected,
       resumeText,
     });
+
+    const creditsConsumed = await consumeCredits(session.user.id, CREDIT_COST);
+    if (!creditsConsumed) {
+      return NextResponse.json({ error: "Not enough credits" }, { status: 402 });
+    }
 
     return result.toUIMessageStreamResponse({
       originalMessages: messages,

@@ -1,62 +1,100 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { LeadDetailData } from "./types"
+import { WarmIntroSection } from "@/components/leads/WarmIntroSection"
 
 function cleanText(input: string) {
   return input.replace(/\s+/g, " ").trim()
 }
 
-export function LeadBody({ lead }: { lead: LeadDetailData }) {
-  const summaryRaw = lead.conversationSummary?.trim() || ""
-  const detailsRaw = lead.projectDetails?.trim() || ""
-
-  const summary = summaryRaw ? cleanText(summaryRaw) : ""
-
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Project Summary</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm leading-relaxed text-foreground/90">
-          {summary ? (
-            <p>{summary}</p>
-          ) : detailsRaw ? (
-            <p className="whitespace-pre-wrap">{detailsRaw}</p>
-          ) : (
-            <p className="text-muted-foreground">No summary captured yet.</p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 text-sm">
-          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
-              <dt className="text-muted-foreground">Timeline</dt>
-              <dd className="font-medium">{lead.timeline || "—"}</dd>
-            </div>
-            <div className="space-y-1">
-              <dt className="text-muted-foreground">Meeting Time</dt>
-              <dd className="font-medium">{lead.meetingTime || "—"}</dd>
-            </div>
-            <div className="space-y-1">
-              <dt className="text-muted-foreground">Budget</dt>
-              <dd className="font-medium">{lead.budget || "—"}</dd>
-            </div>
-          </dl>
-
-          <div className="space-y-2">
-            <p className="text-muted-foreground">Project details</p>
-            <div className="rounded-xl border bg-muted/30 p-4 whitespace-pre-wrap leading-relaxed">
-              {detailsRaw || "—"}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <section>
+      <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">{title}</h3>
+      {children}
+    </section>
   )
 }
 
+export function LeadBody({ lead }: { lead: LeadDetailData }) {
+  const summaryRaw = lead.conversationSummary?.trim() || ""
+  const detailsRaw = lead.projectDetails?.trim() || ""
+  const summary = summaryRaw ? cleanText(summaryRaw) : ""
+
+  const hasMeta = lead.timeline || lead.meetingTime || lead.budget
+
+  return (
+    <div className="space-y-6 pt-4">
+      <WarmIntroSection lead={lead} />
+
+      <Section title="Summary">
+        {summary ? (
+          <p className="text-sm leading-relaxed text-foreground/90">{summary}</p>
+        ) : detailsRaw ? (
+          <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">{detailsRaw}</p>
+        ) : (
+          <p className="text-sm text-muted-foreground">No summary captured yet.</p>
+        )}
+        {detailsRaw && summary && (
+          <p className="mt-3 text-sm leading-relaxed text-foreground/80 whitespace-pre-wrap">{detailsRaw}</p>
+        )}
+      </Section>
+
+      {hasMeta && (
+        <Section title="Details">
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+            {lead.timeline && (
+              <>
+                <dt className="text-muted-foreground">Timeline</dt>
+                <dd>{lead.timeline}</dd>
+              </>
+            )}
+            {lead.meetingTime && (
+              <>
+                <dt className="text-muted-foreground">Meeting</dt>
+                <dd>{lead.meetingTime}</dd>
+              </>
+            )}
+            {lead.budget && (
+              <>
+                <dt className="text-muted-foreground">Budget</dt>
+                <dd>{lead.budget}</dd>
+              </>
+            )}
+          </dl>
+        </Section>
+      )}
+
+      {lead.enrichment && typeof lead.enrichment === 'object' && (
+        <Section title="🕵️ Spy Insights">
+          <div className="rounded-lg border bg-primary/5 p-4 text-sm space-y-3">
+            {lead.enrichment.linkedInUrl && (
+              <div>
+                <span className="font-semibold text-muted-foreground">LinkedIn: </span>
+                <a href={lead.enrichment.linkedInUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  {lead.enrichment.linkedInUrl}
+                </a>
+              </div>
+            )}
+            {lead.enrichment.companySize && (
+              <div>
+                <span className="font-semibold text-muted-foreground">Company Size: </span>
+                {lead.enrichment.companySize}
+              </div>
+            )}
+            {lead.enrichment.recentNews && (
+              <div>
+                <span className="font-semibold text-muted-foreground">Recent News: </span>
+                {lead.enrichment.recentNews}
+              </div>
+            )}
+            {lead.enrichment.bio && (
+              <div>
+                <span className="font-semibold text-muted-foreground">Bio: </span>
+                {lead.enrichment.bio}
+              </div>
+            )}
+          </div>
+        </Section>
+      )}
+    </div>
+  )
+}

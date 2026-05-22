@@ -1,16 +1,17 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/auth";
+import { getSession } from "@/lib/auth/server";
 import { AppSidebar } from "./app-sidebar";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { getProfileById } from "@/lib/db";
 import { getActivePortfolio, getAllPortfolios } from "@/lib/active-portfolio";
-import { TopNavUserMenu } from "./top-nav-user-menu";
 import { PortfolioProvider } from "@/lib/providers/portfolio-provider";
 import { db } from "@/lib/db";
 import { agentLeads } from "@/lib/schema";
 import { eq, desc } from "drizzle-orm";
 import { NotificationSheet } from "@/components/leads/NotificationSheet";
+import { Badge } from "../ui/badge";
+import { NavUser } from "./nav-user";
 
 function subjectFromLead(input: { conversationSummary?: string | null; projectDetails?: string | null }) {
   const source = (input.conversationSummary ?? input.projectDetails ?? "").trim();
@@ -61,6 +62,7 @@ export async function DashboardLayout({ children }: DashboardLayoutProps) {
     : [];
 
   const formattedLeads = fetchedLeads.map((lead) => ({
+    credits: profile?.credits ?? 0,
     id: lead.id,
     name: lead.name,
     email: lead.email,
@@ -93,25 +95,34 @@ export async function DashboardLayout({ children }: DashboardLayoutProps) {
           userImage={profile?.image}
         />
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
             <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
+            <Separator orientation="vertical" className="mr-2 " />
             <div className="flex flex-1 items-center justify-end">
               <div className="flex items-center gap-4">
+                <Badge variant="outline" className="flex p-4 items-center gap-2">
+                  <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 group-data-[collapsible=icon]:hidden">
+                    {profile?.credits ?? 0}
+                  </span>
+                  <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 group-data-[collapsible=icon]:hidden">
+                    Credits
+                  </span>
+                </Badge>
                 <NotificationSheet leads={formattedLeads} />
-                <TopNavUserMenu
-                  userName={profile?.name ?? "User"}
-                  userEmail={session.user.email ?? ""}
-                  userImage={profile?.image}
-                />
+                <NavUser user={{
+                  name: profile?.name ?? "User",
+                  email: session.user.email ?? "",
+                  avatar: profile?.image,
+                  plan: profile?.plan ?? "free",
+                }} />
               </div>
             </div>
           </header>
-          <main className="min-w-0 flex-1 p-4 md:p-6 lg:p-8">
+          <main className="min-w-0 flex-1 p-4 md:p-6 lg:p-8 rounded-2xl">
             {children}
           </main>
         </SidebarInset>
       </PortfolioProvider>
-    </SidebarProvider >
+    </SidebarProvider>
   );
 }

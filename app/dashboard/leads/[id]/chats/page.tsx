@@ -1,4 +1,4 @@
-import { getSession } from "@/auth"
+import { getSession } from "@/lib/auth/server"
 import { redirect, notFound } from "next/navigation"
 import { and, desc, eq } from "drizzle-orm"
 

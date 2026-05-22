@@ -14,6 +14,7 @@ interface ConfigureRequestBody {
   avatarUrl?: unknown;
   intro?: unknown;
   roleLabel?: unknown;
+  leadEnrichmentEnabled?: unknown;
 }
 
 export async function POST(request: Request) {
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
     avatarUrl: jsonResult.body.avatarUrl ? String(jsonResult.body.avatarUrl) : null,
     intro: jsonResult.body.intro ? String(jsonResult.body.intro) : null,
     roleLabel: jsonResult.body.roleLabel ? String(jsonResult.body.roleLabel) : null,
+    leadEnrichmentEnabled: Boolean(jsonResult.body.leadEnrichmentEnabled),
   };
 
   const result = portfolio

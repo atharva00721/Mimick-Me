@@ -51,3 +51,41 @@ export function validateHandle(input: string): HandleValidationResult {
     value: normalized,
   };
 }
+
+
+export type SubdomainValidationResult =
+  | {
+      ok: true;
+      value: string;
+    }
+  | {
+      ok: false;
+      code: "invalid_format" | "reserved_name";
+      message: string;
+    };
+
+export function validateSubdomain(input: string): SubdomainValidationResult {
+  const normalized = normalizeHandle(input);
+
+  if (!HANDLE_REGEX.test(normalized)) {
+    return {
+      ok: false,
+      code: "invalid_format",
+      message:
+        "Subdomain must be 3–30 characters and contain only lowercase letters, numbers, or hyphens.",
+    };
+  }
+
+  if (RESERVED_HANDLES.includes(normalized as (typeof RESERVED_HANDLES)[number])) {
+    return {
+      ok: false,
+      code: "reserved_name",
+      message: "This subdomain is reserved. Please choose another one.",
+    };
+  }
+
+  return {
+    ok: true,
+    value: normalized,
+  };
+}

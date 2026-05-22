@@ -3,97 +3,81 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Check, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { publicPricingTiers } from '@/lib/structured-data'
 
-const plans = [
-    {
-        name: 'Starter',
-        price: '$0',
-        period: '',
-        description: 'Perfect for students and job seekers looking to stand out.',
-        features: [
-            '1 AI Portfolio',
-            '1 AI Agent Clone',
-            '100 AI Messages / mo',
-            'Standard Templates',
-        ],
-    },
-    {
-        name: 'Pro',
-        price: '$19',
-        period: '/month',
-        description: 'Your 24/7 automated sales representative.',
-        features: [
-            '3 AI Portfolios',
-            '3 AI Agents',
-            '1,000 AI Messages / mo',
-            'Google Calendar Integration',
-            'Lead Capture & CRM',
-            'Premium Templates',
-            'Custom Domain Support',
-        ],
-        highlighted: true,
-    },
-    {
-        name: 'Agency',
-        price: '$49',
-        period: '/month',
-        description: 'Scale your portfolio business with power metrics.',
-        features: [
-            '10 AI Portfolios',
-            '10 AI Agents',
-            '10,000 AI Messages / mo',
-            'Deep AI Analytics',
-            'Webhook Integrations',
-            'Priority Support',
-        ],
-    },
-]
+
 
 export default function Pricing() {
     return (
-        <section className="bg-background @container py-24">
-            <div className="mx-auto max-w-5xl px-6">
-                <div className="text-center">
-                    <h2 className="text-balance font-serif text-4xl font-medium">Simple, transparent pricing</h2>
-                    <p className="text-muted-foreground mx-auto mt-4 max-w-md text-balance">Everything you need to deploy your AI representative and start generating leads.</p>
+        <section className="bg-background py-24 sm:py-32">
+            <div className="mx-auto max-w-7xl px-6 lg:px-8">
+                <div className="mx-auto max-w-2xl text-center">
+                    <h2 className="font-serif text-3xl font-medium tracking-tight text-foreground sm:text-4xl text-balance">Simple, transparent pricing</h2>
+                    <p className="mt-4 text-lg text-muted-foreground text-balance">
+                        Everything you need to deploy your AI representative and start generating leads.
+                    </p>
                 </div>
-                <div className="@xl:grid-cols-3 @xl:gap-3 mt-12 grid gap-6">
-                    {plans.map((plan) => (
-                        <Card
-                            key={plan.name}
-                            variant={plan.highlighted ? 'default' : 'mixed'}
-                            className={cn('relative p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl', plan.highlighted && 'ring-primary')}>
-                            <div className="mb-6">
-                                <h3 className="text-foreground font-medium text-lg">{plan.name}</h3>
-                                <p className="text-muted-foreground mt-1 text-sm min-h-[40px]">{plan.description}</p>
-                            </div>
-                            <div>
-                                <span className="font-serif text-5xl font-medium">{plan.price}</span>
-                                <span className="text-muted-foreground">{plan.period}</span>
-                            </div>
-                            <ul className="mt-6 space-y-3 flex-1">
-                                {plan.features.map((feature) => (
-                                    <li
-                                        key={feature}
-                                        className="text-muted-foreground flex items-center gap-2 text-sm leading-snug">
-                                        <Check className="text-primary size-4 shrink-0" />
-                                        {feature}
-                                    </li>
-                                ))}
-                            </ul>
-                            <Button
-                                asChild
-                                variant={plan.highlighted ? 'default' : 'outline'}
-                                className="mt-8 w-full gap-2">
-                                <Link href="/auth/signup">
-                                    Get Started
-                                    <ArrowRight className="size-4" />
-                                </Link>
-                            </Button>
-                        </Card>
-                    ))}
+
+                <div className="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-8 lg:max-w-none lg:grid-cols-3">
+                    {publicPricingTiers.map((plan) => {
+                        const isHighlighted = 'highlighted' in plan && plan.highlighted
+
+                        return (
+                            <Card
+                                key={plan.name}
+                                className={cn(
+                                    'flex flex-col justify-between rounded-3xl p-8 xl:p-10 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl border-border/50',
+                                    isHighlighted ? 'bg-primary text-primary-foreground ring-1 ring-primary' : 'bg-card'
+                                )}
+                            >
+                                <div>
+                                    <div className="flex items-center justify-between gap-x-4 flex-wrap">
+                                        <h3 className={cn("text-lg leading-8", isHighlighted ? "text-primary-foreground" : "text-foreground")}>
+                                            {plan.name}
+                                        </h3>
+                                        {isHighlighted && (
+                                            <p className="rounded-full bg-primary-foreground/10 px-2.5 py-1 text-xs font-semibold leading-5 text-primary-foreground whitespace-nowrap">
+                                                Most popular
+                                            </p>
+                                        )}
+                                    </div>
+                                    <p className={cn("mt-4 text-sm leading-6 min-h-[48px]", isHighlighted ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                                        {plan.description}
+                                    </p>
+                                    <p className="mt-6 flex items-baseline gap-x-1">
+                                        <span className={cn("text-4xl tracking-tight font-serif", isHighlighted ? "text-primary-foreground" : "text-foreground")}>{plan.priceDisplay}</span>
+                                        <span className={cn("text-sm font-semibold leading-6", isHighlighted ? "text-primary-foreground/80" : "text-muted-foreground")}>{plan.period}</span>
+                                    </p>
+
+                                    <Button
+                                        asChild
+                                        variant={isHighlighted ? 'secondary' : 'default'}
+                                        className={cn(
+                                            "mt-8 w-full gap-2 rounded-full",
+                                            isHighlighted && "bg-background text-foreground hover:bg-background/90"
+                                        )}
+                                    >
+                                        <Link href="/auth/signup" title={`Get started with ${plan.name}`}>
+                                            Get Started
+                                            <ArrowRight aria-hidden="true" className="size-4" />
+                                        </Link>
+                                    </Button>
+
+                                    <ul role="list" className={cn("mt-8 space-y-3 text-sm leading-6", isHighlighted ? "text-primary-foreground/90" : "text-muted-foreground")}>
+                                        {plan.features.map((feature) => (
+                                            <li key={feature} className="flex gap-x-3">
+                                                <Check aria-hidden="true" className={cn("h-5 w-5 flex-none", isHighlighted ? "text-primary-foreground" : "text-primary")} />
+                                                {feature}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </Card>
+                        )
+                    })}
                 </div>
-                <p className="text-muted-foreground mt-12 text-center text-sm">
+
+                <p className="text-muted-foreground mt-12 text-center text-sm font-medium">
                     No hidden fees. Upgrade, downgrade, or cancel anytime.
                 </p>
             </div>

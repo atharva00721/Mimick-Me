@@ -100,7 +100,7 @@ export function FileUpload({ onUploadComplete, disabled }: FileUploadProps) {
         mimeType: file.type,
         fileSize: file.size,
       });
-      
+
       setUploadProgress(0);
       if (inputRef.current) {
         inputRef.current.value = "";
@@ -120,10 +120,10 @@ export function FileUpload({ onUploadComplete, disabled }: FileUploadProps) {
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
         className={cn(
-          "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
+          "border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300",
           isDragging
-            ? "border-primary bg-primary/5"
-            : "border-muted-foreground/25 hover:border-muted-foreground/50",
+            ? "border-primary bg-primary/5 scale-[0.98]"
+            : "border-primary/10 bg-background/40 hover:border-primary/30 hover:bg-primary/[0.02]",
           disabled && "opacity-50 pointer-events-none"
         )}
       >
@@ -137,20 +137,28 @@ export function FileUpload({ onUploadComplete, disabled }: FileUploadProps) {
         />
 
         {isUploading ? (
-          <div className="flex flex-col items-center gap-2">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Uploading... {uploadProgress}%</p>
+          <div className="flex flex-col items-center gap-3 animate-in fade-in zoom-in-95">
+            <Loader2 className="h-10 w-10 animate-spin text-primary/80" />
+            <div className="space-y-1">
+              <p className="text-sm font-normal text-foreground">Uploading document...</p>
+              <p className="text-xs text-muted-foreground">{uploadProgress}% complete</p>
+            </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2">
-            <Upload className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Drag and drop a PDF here, or click to select
-            </p>
-            <p className="text-xs text-muted-foreground">Maximum file size: 10MB</p>
+          <div className="flex flex-col items-center gap-3 animate-in fade-in zoom-in-95">
+            <div className="p-3 rounded-full bg-primary/5 text-primary">
+              <Upload className="h-6 w-6" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-normal text-foreground">
+                Click to upload or drag and drop
+              </p>
+              <p className="text-xs text-muted-foreground font-normal">PDF files only (max 10MB)</p>
+            </div>
           </div>
         )}
       </div>
+
 
       {error && (
         <div className="flex items-center gap-2 text-sm text-red-500">
@@ -177,19 +185,26 @@ export function UploadedFilePreview({ fileName, fileSize, status, onRemove }: Up
   };
 
   return (
-    <div className="flex items-center gap-3 p-3 border rounded-lg bg-muted/50">
-      <FileText className="h-8 w-8 text-primary" />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{fileName}</p>
-        <p className="text-xs text-muted-foreground">{formatFileSize(fileSize)}</p>
+    <div className="flex items-center gap-4 p-4 border border-primary/10 rounded-2xl bg-background/50 backdrop-blur-sm animate-in slide-in-from-top-2 duration-300">
+      <div className="p-2.5 rounded-xl bg-red-500/5 text-red-500 border border-red-500/10">
+        <FileText className="h-6 w-6" />
       </div>
-      {status === "uploading" && <Loader2 className="h-4 w-4 animate-spin" />}
-      {status === "ready" && <CheckCircle className="h-4 w-4 text-green-500" />}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-normal text-foreground truncate">{fileName}</p>
+        <p className="text-[11px] text-muted-foreground font-normal uppercase tracking-wider">{formatFileSize(fileSize)}</p>
+      </div>
+      {status === "uploading" && <Loader2 className="h-4 w-4 animate-spin text-primary/60" />}
+      {status === "ready" && (
+        <div className="p-1 rounded-full bg-green-500/10 text-green-500">
+          <CheckCircle className="h-4 w-4" />
+        </div>
+      )}
       {onRemove && (
-        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onRemove}>
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-red-500/10 hover:text-red-500" onClick={onRemove}>
           <X className="h-4 w-4" />
         </Button>
       )}
     </div>
+
   );
 }

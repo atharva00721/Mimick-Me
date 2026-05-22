@@ -19,6 +19,8 @@ export interface ConfigureAgentInput {
   roleLabel: string | null;
   workingHours?: { dayOfWeek: number; startTime: string; endTime: string; enabled: boolean }[] | null;
   offDays?: string[] | null;
+  notificationEmail?: string | null;
+  leadEnrichmentEnabled: boolean;
 }
 
 export function validateConfigureAgentInput(input: ConfigureAgentInput) {
@@ -32,6 +34,7 @@ export function validateConfigureAgentInput(input: ConfigureAgentInput) {
   const normalizedAvatarUrl = input.avatarUrl?.trim() || null;
   const normalizedIntro = input.intro?.trim().slice(0, 280) || null;
   const normalizedRoleLabel = input.roleLabel?.trim().slice(0, 60) || null;
+  const normalizedNotificationEmail = input.notificationEmail?.trim().slice(0, 255) || null;
 
   if (input.behaviorType && !isBehaviorPresetType(input.behaviorType)) {
     return { ok: false as const, error: "Invalid behavior preset" };
@@ -65,8 +68,10 @@ export function validateConfigureAgentInput(input: ConfigureAgentInput) {
       avatarUrl: normalizedAvatarUrl,
       intro: normalizedIntro,
       roleLabel: normalizedRoleLabel,
+      notificationEmail: normalizedNotificationEmail,
       workingHours: input.workingHours ?? null,
       offDays: input.offDays ?? null,
+      leadEnrichmentEnabled: input.leadEnrichmentEnabled ?? false,
     },
   };
 }
@@ -133,8 +138,10 @@ export async function configureAgentForPortfolio(userId: string, portfolioId: st
       avatarUrl: validation.value.avatarUrl,
       intro: validation.value.intro,
       roleLabel: validation.value.roleLabel,
+      notificationEmail: validation.value.notificationEmail,
       workingHours: validation.value.workingHours,
       offDays: validation.value.offDays,
+      leadEnrichmentEnabled: validation.value.leadEnrichmentEnabled,
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
@@ -151,8 +158,10 @@ export async function configureAgentForPortfolio(userId: string, portfolioId: st
         avatarUrl: validation.value.avatarUrl,
         intro: validation.value.intro,
         roleLabel: validation.value.roleLabel,
+        notificationEmail: validation.value.notificationEmail,
         workingHours: validation.value.workingHours,
         offDays: validation.value.offDays,
+        leadEnrichmentEnabled: validation.value.leadEnrichmentEnabled,
         updatedAt: new Date(),
       },
     });
@@ -182,8 +191,10 @@ export async function configureAgentForUser(userId: string, input: ConfigureAgen
         avatarUrl: validation.value.avatarUrl,
         intro: validation.value.intro,
         roleLabel: validation.value.roleLabel,
+        notificationEmail: validation.value.notificationEmail,
         workingHours: validation.value.workingHours,
         offDays: validation.value.offDays,
+        leadEnrichmentEnabled: validation.value.leadEnrichmentEnabled,
         updatedAt: new Date(),
       })
       .where(eq(agents.id, existingAgent.id));
@@ -210,8 +221,10 @@ export async function configureAgentForUser(userId: string, input: ConfigureAgen
     avatarUrl: validation.value.avatarUrl,
     intro: validation.value.intro,
     roleLabel: validation.value.roleLabel,
+    notificationEmail: validation.value.notificationEmail,
     workingHours: validation.value.workingHours,
     offDays: validation.value.offDays,
+    leadEnrichmentEnabled: validation.value.leadEnrichmentEnabled,
     updatedAt: new Date(),
   });
 

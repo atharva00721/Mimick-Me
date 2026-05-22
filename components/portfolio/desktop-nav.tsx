@@ -56,7 +56,7 @@ export function DesktopNav({ visibleSections }: DesktopNavProps) {
                 )}
                 {isSectionVisible(visibleSections, "testimonials") && (
                     <NavigationMenuItem>
-                        <NavigationMenuLink href="#testimonials" className={navigationMenuTriggerStyle()}>
+                        <NavigationMenuLink href="mailto:atharva@gmail.com" className={navigationMenuTriggerStyle()}>
                             Feedback
                         </NavigationMenuLink>
                     </NavigationMenuItem>

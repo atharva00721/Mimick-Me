@@ -1,7 +1,8 @@
 "use client";
-
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { UpgradeRequiredModal } from "@/components/upgrade-required-modal";
+import { PLAN_LIMITS, type PlanTier } from "@/lib/plan-limits";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -11,6 +12,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenuButton } from "@/components/ui/sidebar";
+import { LogoIcon } from "@/components/logo";
 import { Check, ChevronsUpDown, Plus, Briefcase, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePortfolioStore, type PortfolioSummary } from "@/lib/stores/portfolio-store";
@@ -18,8 +20,9 @@ import { usePortfolioStore, type PortfolioSummary } from "@/lib/stores/portfolio
 // Re-export so DashboardLayout can import the type from one place
 export type { PortfolioSummary };
 
-export function PortfolioSwitcher() {
+export function PortfolioSwitcher({ plan = "free" }: { plan?: string }) {
     const router = useRouter();
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const [isPending, startTransition] = useTransition();
 
     const portfolios = usePortfolioStore((s) => s.portfolios);
@@ -36,6 +39,15 @@ export function PortfolioSwitcher() {
         startTransition(() => router.refresh());
     }
 
+    const handleCreateNew = () => {
+        const limit = PLAN_LIMITS[plan as PlanTier]?.portfolios ?? 1;
+        if (portfolios.length >= limit) {
+            setShowUpgradeModal(true);
+        } else {
+            router.push("/onboarding");
+        }
+    };
+
     if (!active) return null;
 
     const isLoading = isSwitching || isPending;
@@ -45,18 +57,18 @@ export function PortfolioSwitcher() {
             <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                     size="lg"
-                    className="w-full data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                    className="w-full data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:!p-0"
                 >
-                    {/* Portfolio icon badge */}
-                    {/* <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shrink-0">
+                    {/* Logo Icon visible in both states */}
+                    <div className="flex size-12 group-data-[collapsible=icon]:size-10 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shrink-0 overflow-hidden">
                         {isLoading ? (
                             <Loader2 className="size-4 animate-spin" />
                         ) : (
-                            <></>
+                            <LogoIcon className="h-auto w-auto group-data-[collapsible=icon]:size-7" />
                         )}
-                    </div> */}
+                    </div>
 
-                    {/* Name + handle */}
+                    {/* Name + handle hidden when collapsed */}
                     <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                         <span className="truncate font-semibold">{active.name}</span>
                         <span className="truncate text-xs text-muted-foreground">/{active.handle}</span>
@@ -129,7 +141,7 @@ export function PortfolioSwitcher() {
 
                 <DropdownMenuItem
                     className="flex items-center gap-3 cursor-pointer text-muted-foreground hover:text-foreground"
-                    onClick={() => router.push("/onboarding")}
+                    onClick={handleCreateNew}
                 >
                     <div className="flex size-7 items-center justify-center rounded-md border border-dashed bg-background shrink-0">
                         <Plus className="size-3.5" />
@@ -137,6 +149,11 @@ export function PortfolioSwitcher() {
                     <span className="text-sm">Add New Portfolio</span>
                 </DropdownMenuItem>
             </DropdownMenuContent>
+            <UpgradeRequiredModal
+                isOpen={showUpgradeModal}
+                onOpenChange={setShowUpgradeModal}
+                featureName="creating additional portfolios"
+            />
         </DropdownMenu >
     );
 }

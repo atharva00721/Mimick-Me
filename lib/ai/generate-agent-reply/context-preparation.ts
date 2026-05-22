@@ -78,6 +78,9 @@ function buildProfileMetadata(input: GenerateAgentReplyInput): Record<string, un
     displayName: input.displayName,
     roleLabel: input.roleLabel,
     intro: input.intro,
+    calendlyEnabled: input.calendlyEnabled,
+    calendlyAccountEmail: input.calendlyAccountEmail,
+    calendlySchedulingUrl: input.calendlySchedulingUrl,
   };
 }
 

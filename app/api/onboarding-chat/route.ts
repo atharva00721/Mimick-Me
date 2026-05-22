@@ -1,11 +1,15 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 import { NextResponse } from "next/server";
-import { getSession } from "@/auth";
+import { getSession } from "@/lib/auth/server";
 import { refineOnboardingAnswer } from "@/lib/ai/refine-onboarding";
 import { getPortfolioByHandle } from "@/lib/db/portfolio";
 import { getNextStep, getQuestionForStep } from "@/lib/onboarding/state-machine";
 import type { OnboardingChatRequest, OnboardingStep } from "@/lib/onboarding/types";
 import { validateStepInput } from "@/lib/onboarding/validation";
+import { consumeCredits, getCredits } from "@/lib/credits";
+
+const CREDIT_COST = 1;
 
 function badRequest(message: string) {
   return NextResponse.json(
@@ -61,10 +65,20 @@ export async function POST(request: Request) {
   let refinedAnswer = String(validation.value);
 
   if (shouldRefine) {
+    const currentCredits = await getCredits(session.user.id);
+    if (currentCredits < CREDIT_COST) {
+      return NextResponse.json({ ok: false, error: "Not enough credits" }, { status: 402 });
+    }
+
     refinedAnswer = await refineOnboardingAnswer(currentStep, body.answer);
     const refinedValidation = validateStepInput(currentStep, refinedAnswer);
     if (refinedValidation.ok) {
       finalValue = refinedValidation.value;
+    }
+
+    const creditsConsumed = await consumeCredits(session.user.id, CREDIT_COST);
+    if (!creditsConsumed) {
+      return NextResponse.json({ ok: false, error: "Not enough credits" }, { status: 402 });
     }
   }
 

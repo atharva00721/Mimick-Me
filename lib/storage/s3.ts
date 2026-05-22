@@ -33,10 +33,58 @@ export async function getUploadUrl(
     Bucket: BUCKET_NAME,
     Key: key,
     ContentType: mimeType,
+    // ACL omitted — use bucket policy for public read
   });
 
   const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
   const publicUrl = `${process.env.S3_PUBLIC_URL || `https://${BUCKET_NAME}.s3.${process.env.S3_REGION || 'us-east-1'}.amazonaws.com`}/${key}`;
+
+  return { uploadUrl, key, publicUrl };
+}
+
+export async function getPortfolioUploadUrl(
+  fileName: string,
+  mimeType: string,
+  userId: string
+): Promise<UploadUrlResult> {
+  // UUID prefix: collision-free, non-guessable keys
+  const ext = fileName.includes(".") ? fileName.split(".").pop() : "bin";
+  const key = `portfolios/${userId}/${crypto.randomUUID()}.${ext}`;
+
+  // IMPORTANT: Do NOT include ACL here.
+  // If ACL is in the command it gets baked into the presigned URL's signature,
+  // and then S3 requires `x-amz-acl` in the PUT request — clients often miss it → 400.
+  // Instead, configure the bucket with a public-read bucket policy.
+  const command = new PutObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+    ContentType: mimeType,
+    // ACL deliberately omitted — use bucket policy for public read
+  });
+
+  const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 }); // 15 min
+  const publicUrl = `${process.env.S3_PUBLIC_URL || `https://${BUCKET_NAME}.s3.${process.env.S3_REGION || "us-east-1"}.amazonaws.com`}/${key}`;
+
+  return { uploadUrl, key, publicUrl };
+}
+
+export async function getAvatarUploadUrl(
+  fileName: string,
+  mimeType: string,
+  userId: string
+): Promise<UploadUrlResult> {
+  const ext = fileName.includes(".") ? fileName.split(".").pop() : "bin";
+  const key = `avatars/${userId}/${crypto.randomUUID()}.${ext}`;
+
+  const command = new PutObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+    ContentType: mimeType,
+    // ACL omitted — use bucket policy for public read
+  });
+
+  const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
+  const publicUrl = `${process.env.S3_PUBLIC_URL || `https://${BUCKET_NAME}.s3.${process.env.S3_REGION || "us-east-1"}.amazonaws.com`}/${key}`;
 
   return { uploadUrl, key, publicUrl };
 }
@@ -80,7 +128,9 @@ export async function deleteFile(key: string): Promise<void> {
 export function getKeyFromUrl(url: string): string | null {
   try {
     const urlObj = new URL(url);
-    return urlObj.pathname.slice(1);
+    // Decode percent-encoded characters (e.g. %20 → space) so the key
+    // matches what was actually stored in S3.
+    return decodeURIComponent(urlObj.pathname.slice(1));
   } catch {
     return null;
   }

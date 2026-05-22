@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, AlertCircle, Sparkles, Globe, Activity, Users, TrendingUp, RefreshCw } from "lucide-react";
+import { ArrowRight, AlertCircle, Globe, Activity, Users, TrendingUp, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { CopyButton } from "@/components/dashboard/copy-button";
 import { redirect } from "next/navigation";
@@ -16,7 +16,7 @@ export default async function OverviewPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <AlertCircle className="size-12 text-muted-foreground" />
-        <h2 className="text-xl font-semibold">No Portfolio Found</h2>
+        <h2 className="text-xl">No Portfolio Found</h2>
         <p className="text-muted-foreground text-center max-w-sm">
           You need to complete onboarding first to set up your portfolio and AI agent.
         </p>
@@ -29,6 +29,10 @@ export default async function OverviewPage() {
 
   const { data, profile, hasContent, modelLabel, newLeads, portfolioLink, totalLeads, analytics7d, dailyAnalytics, session } = overview;
   const { portfolio, agent } = data;
+
+  const appBaseUrl = (process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  const normalizedPortfolioLink = portfolioLink.startsWith("/") ? portfolioLink : `/${portfolioLink}`;
+  const fullPortfolioUrl = `${appBaseUrl}${normalizedPortfolioLink}`;
 
   return (
     <div className="flex flex-col gap-8 pb-8">
@@ -45,7 +49,6 @@ export default async function OverviewPage() {
       {/* Warning banners */}
       {!hasContent && (
         <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4 flex items-start gap-3">
-          <Sparkles className="size-5 text-yellow-600 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-medium">Portfolio content not generated yet</p>
             <p className="text-xs text-muted-foreground mt-1">
@@ -69,11 +72,11 @@ export default async function OverviewPage() {
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-foreground">Portfolio</span>
               <span className="text-xs text-muted-foreground">
-                {portfolio.isPublished ? "Published" : "Draft"}
+                {portfolio?.isPublished ? "Published" : "Draft"}
               </span>
             </div>
             <span className="text-xs text-muted-foreground capitalize mt-0.5">
-              Template: {portfolio.template}
+              Template: {portfolio?.template}
             </span>
           </div>
         </div>
@@ -218,13 +221,12 @@ export default async function OverviewPage() {
               </div>
               <div className="flex items-center gap-2 p-1.5 bg-muted/50 rounded-lg border border-muted">
                 <div className="flex-1 min-w-0 px-3 py-2 rounded-md text-sm truncate font-mono bg-background border shadow-sm select-all">
-                  {process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}
-                  {portfolioLink}
+                  {fullPortfolioUrl}
                 </div>
-                <CopyButton text={`${process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}${portfolioLink}`} />
+                <CopyButton text={fullPortfolioUrl} />
               </div>
               <Button variant="outline" className="w-full bg-background" asChild>
-                <a href={`${process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}${portfolioLink}`} target="_blank" rel="noopener noreferrer">
+                <a href={fullPortfolioUrl} target="_blank" rel="noopener noreferrer">
                   Open in new tab <ArrowRight className="ml-2 size-4" />
                 </a>
               </Button>

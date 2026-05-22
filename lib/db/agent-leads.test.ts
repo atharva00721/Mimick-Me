@@ -29,6 +29,7 @@ describe("agent lead dedupe helpers", () => {
       confidence: 61,
       sessionId: "session-1",
       captureTurn: 2,
+      notificationSent: false,
     };
 
     const incoming: SaveLeadInput = {

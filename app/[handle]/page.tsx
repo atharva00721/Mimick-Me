@@ -8,10 +8,13 @@ import { LandingTemplate } from "@/components/templates/landing-template";
 import { GalleryTemplate } from "@/components/templates/gallery-template";
 import { MinimalTemplate } from "@/components/templates/minimal-template";
 import { InteractiveTemplate } from "@/components/templates/interactive-template";
+import { StudioTemplate } from "@/components/templates/studio-template";
+import { PersonalTemplate } from "@/components/templates/personal-template";
 import { getPublishedPortfolioByHandle, getPublishedPortfolioWithAgentByHandle } from "@/lib/db/portfolio";
 import { validatePortfolioContent } from "@/lib/validation/portfolio-schema";
 import { AgentWidget } from "@/components/agent-widget";
 import { AnalyticsTracker } from "@/components/analytics-tracker";
+import { MadeWithBadge } from "@/components/made-with-badge";
 
 const HANDLE_REGEX = /^[a-z0-9-]{3,30}$/;
 
@@ -39,7 +42,7 @@ export async function generateMetadata({ params }: PublicPortfolioPageProps): Pr
     const content = validatePortfolioContent(portfolio.content);
     const title = content.hero.headline;
     const description = content.about.paragraph.slice(0, 150);
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
     const canonical = `${baseUrl}/${handle}`;
 
     return {
@@ -50,6 +53,11 @@ export async function generateMetadata({ params }: PublicPortfolioPageProps): Pr
         description,
         url: canonical,
         type: "website",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
       },
       alternates: {
         canonical,
@@ -96,6 +104,10 @@ export default async function PublicPortfolioPage({ params }: PublicPortfolioPag
         <MinimalTemplate content={content} />
       ) : portfolio.template === "interactive" ? (
         <InteractiveTemplate content={content} />
+      ) : portfolio.template === "studio" ? (
+        <StudioTemplate content={content} />
+      ) : portfolio.template === "personal" ? (
+        <PersonalTemplate content={content} />
       ) : (
         <ModernTemplate content={content} />
       )}
@@ -108,6 +120,7 @@ export default async function PublicPortfolioPage({ params }: PublicPortfolioPag
           intro={portfolio.agentIntro ?? null}
         />
       ) : null}
+      {portfolio.plan === "free" && <MadeWithBadge />}
     </main>
   );
 }

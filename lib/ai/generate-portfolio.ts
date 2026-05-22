@@ -30,6 +30,7 @@ Use a professional, concise, client-facing tone. Keep all descriptions strictly 
 For arrays (services, projects, products, history, testimonials, faq, gallery), generate a MAXIMUM of 2 to 3 items each. Give very concise placeholder text if needed.
 Output must be a single JSON object matching this exact TypeScript shape:
 {
+  "name": string,
   "hero": {
     "headline": string,
     "subheadline": string,

@@ -1,6 +1,0 @@
-import { auth as authFunction, handlers, signIn, signOut, authInstance } from "./auth-helper";
-
-export { handlers, signIn, signOut };
-export const auth = authFunction;
-export const getSession = authFunction;
-export const betterAuth = authInstance;

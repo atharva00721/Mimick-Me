@@ -1,4 +1,4 @@
-import { getSession } from "@/auth";
+import { getSession } from "@/lib/auth/server";
 import { redirect } from "next/navigation";
 import { getDashboardData } from "../_lib/get-dashboard-data";
 import { LeadsClient } from "./leads-client";

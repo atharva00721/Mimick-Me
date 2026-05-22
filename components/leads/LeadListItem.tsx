@@ -1,6 +1,4 @@
-import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { getLeadConfidenceBadgeClass, getLeadConfidenceLabel } from "./lead-confidence"
 import type { LeadListItemData } from "./types"
 
 function formatShortDate(iso: string) {
@@ -8,7 +6,6 @@ function formatShortDate(iso: string) {
   if (Number.isNaN(date.getTime())) return "—"
   return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(date)
 }
-
 
 export function LeadListItem({
   lead,
@@ -26,54 +23,38 @@ export function LeadListItem({
       type="button"
       onClick={onSelect}
       className={cn(
-        "w-full min-w-0 overflow-hidden text-left group flex gap-3 px-3 py-3 rounded-xl transition-colors",
-        "hover:bg-muted/50",
-        selected && "bg-muted"
+        "w-full max-w-full min-w-0 overflow-hidden text-left flex gap-2.5 px-2.5 py-2 rounded-lg transition-colors border-l-2 -ml-px pl-[9px]",
+        "border-transparent hover:bg-muted/40",
+        selected && "bg-muted/60 border-muted-foreground/30",
+        isUnread && "border-primary"
       )}
     >
-      <div className="pt-2">
-        <span
-          className={cn(
-            "block size-2 rounded-full transition-opacity",
-            isUnread ? "bg-primary opacity-100" : "opacity-0"
-          )}
-          aria-hidden
-        />
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-3">
-          <p className={cn("truncate font-medium", isUnread && "font-semibold")}>
+      <div className="min-w-0 flex-1 overflow-hidden w-0 flex flex-col gap-0.5">
+        <div className="flex items-baseline justify-between gap-2 min-w-0">
+          <p className={cn("min-w-0 flex-1 truncate text-lg font-serif", isUnread ? "font-medium" : "font-normal text-foreground/90")}>
             {lead.name || "Anonymous"}
           </p>
-          <p className="shrink-0 text-xs text-muted-foreground">
+          <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
             {formatShortDate(lead.createdAt)}
-          </p>
+          </span>
         </div>
-
         {/* <p
-          className="mt-0.5 truncate text-sm text-muted-foreground"
-          title={lead.subject || "No subject"}
+          className="min-w-0 truncate text-xs text-muted-foreground"
+          title={lead.subject || undefined}
         >
           {lead.subject || "No subject"}
         </p> */}
-
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          {lead.budget ? (
-            <Badge variant="secondary" className="rounded-full">
-              {lead.budget}
-            </Badge>
-          ) : null}
-
-          <Badge
-            variant="outline"
-            className={cn("rounded-full", getLeadConfidenceBadgeClass(lead.confidence))}
+        {(lead.budget ?? lead.confidence != null) && (
+          <p
+            className="min-w-0 truncate text-[11px] text-muted-foreground/80 mt-0.5"
+            title={[lead.budget, lead.confidence != null ? `${Math.round(lead.confidence)}% match` : null].filter(Boolean).join(" · ") || undefined}
           >
-            {getLeadConfidenceLabel(lead.confidence)} ({Math.round(lead.confidence)}%)
-          </Badge>
-        </div>
+            {[lead.budget, lead.confidence != null ? `${Math.round(lead.confidence)}% match` : null]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+        )}
       </div>
     </button>
   )
 }
-

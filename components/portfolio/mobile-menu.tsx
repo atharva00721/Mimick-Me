@@ -7,6 +7,8 @@ import { MenuIcon } from "lucide-react";
 import { isSectionVisible } from "@/lib/portfolio/section-registry";
 import type { PortfolioContent } from "@/lib/validation/portfolio-schema";
 
+import { LogoIcon } from "@/components/logo";
+
 interface MobileMenuProps {
     visibleSections: PortfolioContent["visibleSections"];
 }
@@ -37,7 +39,7 @@ export function MobileMenu({ visibleSections }: MobileMenuProps) {
             </SheetTrigger>
             <SheetContent side="right" className="w-[85vw] sm:max-w-sm flex flex-col gap-0 p-0 border-l border-border/50 bg-background/95 backdrop-blur-xl">
                 <SheetHeader className="px-6 py-6 border-b border-border/50 text-left flex flex-row items-center gap-3 space-y-0">
-                    <img src="/ai-logo.png" alt="Logo" className="w-8 h-8 object-contain dark:invert" />
+                    <LogoIcon className="h-auto w-auto dark:invert" />
                     <SheetTitle className="text-lg font-bold tracking-tight">Navigation</SheetTitle>
                 </SheetHeader>
 
@@ -59,7 +61,7 @@ export function MobileMenu({ visibleSections }: MobileMenuProps) {
                             <MobileNavLink href="#history" onClick={handleLinkClick}>History</MobileNavLink>
                         )}
                         {isSectionVisible(visibleSections, "testimonials") && (
-                            <MobileNavLink href="#testimonials" onClick={handleLinkClick}>Feedback</MobileNavLink>
+                            <MobileNavLink href="mailto:atharva@gmail.com" onClick={handleLinkClick}>Feedback</MobileNavLink>
                         )}
                         {isSectionVisible(visibleSections, "faq") && (
                             <MobileNavLink href="#faq" onClick={handleLinkClick}>FAQ</MobileNavLink>

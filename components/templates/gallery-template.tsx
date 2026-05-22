@@ -1,47 +1,33 @@
-"use client";
+﻿"use client";
 
 import type { PortfolioContent } from "@/lib/validation/portfolio-schema";
 import { isSectionVisible, mergeVisibleSections } from "@/lib/portfolio/section-registry";
-import { Button } from "@/components/ui/button";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { MobileMenu } from "@/components/portfolio/mobile-menu";
 import { DesktopNav } from "@/components/portfolio/desktop-nav";
-import { ArrowRightIcon, XIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { AnimateIn, StaggerChildren, StaggerItem } from "@/components/animate-in";
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
+import { ArrowRightIcon, XIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { Twitter, Linkedin, Github, Instagram, Youtube, Facebook, Globe } from "lucide-react";
 
 const platformIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  twitter: Twitter,
-  linkedin: Linkedin,
-  github: Github,
-  instagram: Instagram,
-  youtube: Youtube,
-  facebook: Facebook,
-  website: Globe,
+  twitter: Twitter, linkedin: Linkedin, github: Github, instagram: Instagram,
+  youtube: Youtube, facebook: Facebook, website: Globe,
 };
 
 function SocialLinks({ socialLinks }: { socialLinks: PortfolioContent["socialLinks"] }) {
   if (!socialLinks || socialLinks.length === 0) return null;
-
-  const enabledLinks = socialLinks.filter(link => link.enabled && link.url);
+  const enabledLinks = socialLinks.filter((l) => l.enabled && l.url);
   if (enabledLinks.length === 0) return null;
-
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-5">
       {enabledLinks.map((link) => {
         const Icon = platformIcons[link.platform] || Globe;
         return (
-          <a
-            key={link.platform}
-            href={link.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label={link.platform}
-          >
-            <Icon className="size-5" />
+          <a key={link.platform} href={link.url} target="_blank" rel="noopener noreferrer"
+            className="text-white/30 hover:text-white/80 transition-colors" aria-label={link.platform}>
+            <Icon className="size-4" />
           </a>
         );
       })}
@@ -52,119 +38,121 @@ function SocialLinks({ socialLinks }: { socialLinks: PortfolioContent["socialLin
 export function GalleryTemplate({ content }: { content: PortfolioContent }) {
   const visibleSections = mergeVisibleSections(content.visibleSections);
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
-  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
-  const openProject = (index: number) => {
-    setSelectedProject(index);
-    setIsGalleryOpen(true);
-    document.body.style.overflow = "hidden";
-  };
-
-  const closeProject = () => {
-    setIsGalleryOpen(false);
-    document.body.style.overflow = "";
-    setTimeout(() => setSelectedProject(null), 300);
-  };
-
-  const goToProject = (direction: "prev" | "next") => {
+  const openProject = (index: number) => { setSelectedProject(index); setIsLightboxOpen(true); };
+  const closeProject = () => { setIsLightboxOpen(false); setTimeout(() => setSelectedProject(null), 300); };
+  const goToProject = (dir: "prev" | "next") => {
     if (selectedProject === null) return;
-    const newIndex = direction === "next"
-      ? (selectedProject + 1) % content.projects.length
-      : (selectedProject - 1 + content.projects.length) % content.projects.length;
-    setSelectedProject(newIndex);
+    setSelectedProject(dir === "next" ? (selectedProject + 1) % content.projects.length : (selectedProject - 1 + content.projects.length) % content.projects.length);
   };
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isGalleryOpen) return;
+    if (isLightboxOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+  }, [isLightboxOpen]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!isLightboxOpen) return;
       if (e.key === "Escape") closeProject();
       if (e.key === "ArrowLeft") goToProject("prev");
       if (e.key === "ArrowRight") goToProject("next");
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isGalleryOpen, selectedProject]);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isLightboxOpen, selectedProject]);
 
   return (
-    <div className="bg-background text-foreground min-h-screen font-sans">
-      <header className="sticky top-0 z-20 border-b border-border/50 bg-background/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <a href="#" className="flex items-center gap-2">
-            <span className="text-sm font-semibold tracking-wide">Gallery</span>
+    <div className="bg-[#0e0e0e] text-white min-h-screen font-sans">
+      <header className="sticky top-0 z-20 bg-[#0e0e0e]/95 backdrop-blur-sm border-b border-white/5">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+          <a href="#" className="font-serif text-lg font-light tracking-tight text-white/90">
+            {content.name || content.hero.headline}
           </a>
           <DesktopNav visibleSections={visibleSections} />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 opacity-40 hover:opacity-100 transition-opacity">
             <ThemeSwitcher />
             <MobileMenu visibleSections={visibleSections} />
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-6 py-16 sm:py-24 space-y-32">
+      <main className="mx-auto max-w-6xl px-6">
+
         {isSectionVisible(visibleSections, "hero") && (
-          <section className="space-y-8 max-w-4xl pt-8 sm:pt-16">
-            <AnimateIn from="bottom" duration={0.8}>
-              <h1 className="text-5xl sm:text-7xl font-semibold tracking-tight text-balance leading-[1.1]">
+          <section className="pt-24 pb-32 border-b border-white/5">
+            <AnimateIn duration={1.0} from="bottom">
+              <h1 className="text-[clamp(3.5rem,12vw,10rem)] font-serif font-light tracking-[-0.04em] leading-[0.92] text-white/90 text-balance">
                 {content.hero.headline}
               </h1>
             </AnimateIn>
-            <AnimateIn delay={0.15}>
-              <p className="text-xl sm:text-2xl text-muted-foreground max-w-2xl leading-relaxed">
+            <AnimateIn delay={0.2} duration={0.8}>
+              <p className="mt-12 text-base text-white/40 max-w-md leading-relaxed font-light">
                 {content.hero.subheadline}
               </p>
             </AnimateIn>
-            <AnimateIn delay={0.3}>
-              <div className="pt-4">
-                <Button asChild size="lg" className="rounded-none px-8 h-12 text-base font-medium group">
-                  <a href={isSectionVisible(visibleSections, "cta") ? "#contact" : "#"}>
-                    {content.hero.ctaText}
-                    <ArrowRightIcon className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
-                  </a>
-                </Button>
-              </div>
+            <AnimateIn delay={0.36}>
+              <a href={isSectionVisible(visibleSections, "cta") ? "#contact" : "#"}
+                className="mt-10 inline-flex items-center gap-2 text-xs tracking-[0.3em] uppercase text-white/40 hover:text-white/80 transition-colors duration-500">
+                {content.hero.ctaText} <ArrowRightIcon className="size-3" />
+              </a>
             </AnimateIn>
           </section>
         )}
 
         {isSectionVisible(visibleSections, "about") && (
-          <section id="about" className="max-w-3xl">
+          <section id="about" className="py-24 border-b border-white/5">
             <AnimateIn>
-              <p className="text-sm font-medium text-muted-foreground mb-4">About</p>
-              <p className="text-2xl sm:text-3xl font-medium leading-relaxed text-balance">
+              <p className="text-2xl sm:text-3xl font-serif font-light text-white/60 leading-[1.6] max-w-3xl">
                 {content.about.paragraph}
               </p>
             </AnimateIn>
           </section>
         )}
 
-        {isSectionVisible(visibleSections, "projects") && content.projects && content.projects.length > 0 && (
-          <section id="work" className="space-y-12">
+        {isSectionVisible(visibleSections, "services") && content.services && content.services.length > 0 && (
+          <section id="services" className="py-24 border-b border-white/5">
             <AnimateIn>
-              <div className="flex items-center justify-between border-b border-border/50 pb-4">
-                <h2 className="text-2xl font-semibold">Selected Work</h2>
-                <span className="text-sm text-muted-foreground">{content.projects.length} Projects</span>
+              <p className="text-[10px] tracking-[0.4em] uppercase text-white/20 mb-12">Services</p>
+            </AnimateIn>
+            <div className="space-y-0">
+              {content.services.map((service, i) => (
+                <AnimateIn key={i} delay={i * 0.07}>
+                  <div className="py-6 border-b border-white/5 last:border-0 flex items-start gap-8 group">
+                    <span className="text-[10px] text-white/20 font-mono mt-0.5 shrink-0">{String(i + 1).padStart(2, "0")}</span>
+                    <div>
+                      <h3 className="text-sm text-white/60 group-hover:text-white/90 transition-colors duration-500 mb-1.5">{service.title}</h3>
+                      <p className="text-xs text-white/30 leading-relaxed">{service.description}</p>
+                    </div>
+                  </div>
+                </AnimateIn>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {isSectionVisible(visibleSections, "projects") && content.projects && content.projects.length > 0 && (
+          <section id="work" className="py-24 border-b border-white/5">
+            <AnimateIn>
+              <div className="flex items-center justify-between mb-12">
+                <p className="text-[10px] tracking-[0.4em] uppercase text-white/20">Work</p>
+                <span className="text-[10px] text-white/20 font-mono">{content.projects.length} projects</span>
               </div>
             </AnimateIn>
-
-            <StaggerChildren stagger={0.1} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <StaggerChildren stagger={0.08} className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {content.projects.map((project, i) => (
                 <StaggerItem key={i}>
-                  <button
-                    onClick={() => openProject(i)}
-                    className="group relative w-full text-left aspect-square bg-muted/30 overflow-hidden block"
-                  >
-                    <div className="absolute inset-0 bg-muted/50 flex items-center justify-center">
-                      <span className="text-muted-foreground/30 text-6xl font-bold">
-                        {i + 1}
-                      </span>
+                  <button onClick={() => openProject(i)} className="group relative w-full aspect-square bg-white/5 overflow-hidden block hover:bg-white/10 transition-colors duration-500">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-6xl font-serif font-light text-white/10 group-hover:text-white/5 transition-colors duration-700">{i + 1}</span>
                     </div>
-                    <div className="absolute inset-0 bg-background/90 opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-6 flex flex-col justify-end">
-                      <h3 className="text-xl font-semibold text-foreground translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                        {project.title}
-                      </h3>
-                      <p className="mt-2 text-sm text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100 line-clamp-2">
-                        {project.description}
-                      </p>
+                    <div className="absolute inset-0 bg-[#0e0e0e]/90 opacity-0 group-hover:opacity-100 transition-opacity duration-400 p-5 flex flex-col justify-end">
+                      <h3 className="text-sm font-medium text-white/90 mb-1.5 translate-y-2 group-hover:translate-y-0 transition-transform duration-400">{project.title}</h3>
+                      <p className="text-xs text-white/40 line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-400">{project.description}</p>
                     </div>
                   </button>
                 </StaggerItem>
@@ -174,71 +162,55 @@ export function GalleryTemplate({ content }: { content: PortfolioContent }) {
         )}
 
         {isSectionVisible(visibleSections, "products") && content.products && content.products.length > 0 && (
-          <section id="products" className="space-y-12">
+          <section id="products" className="py-24 border-b border-white/5">
             <AnimateIn>
-              <div className="flex items-center justify-between border-b border-border/50 pb-4">
-                <h2 className="text-2xl font-semibold">Products</h2>
-                <span className="text-sm text-muted-foreground">{content.products.length} Items</span>
-              </div>
+              <p className="text-[10px] tracking-[0.4em] uppercase text-white/20 mb-12">Products</p>
             </AnimateIn>
-
-            <StaggerChildren stagger={0.1} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {content.products.map((product, i) => (
-                <StaggerItem key={i}>
-                  <div className="group border border-border/50 bg-muted/10 overflow-hidden flex flex-col h-full hover:border-foreground/30 transition-colors">
+                <AnimateIn key={i} delay={i * 0.07}>
+                  <div className="border border-white/5 p-5 group hover:border-white/15 transition-colors duration-500">
                     {product.image && (
-                      <div className="aspect-[4/3] w-full overflow-hidden bg-muted/30">
-                        <img
-                          src={product.image}
-                          alt={product.title}
-                          className="object-cover w-full h-full grayscale group-hover:grayscale-0 transition-all duration-500 transform group-hover:scale-105"
-                        />
+                      <div className="aspect-[4/3] overflow-hidden bg-white/5 mb-5">
+                        <img src={product.image} alt={product.title}
+                          className="object-cover w-full h-full grayscale group-hover:grayscale-0 opacity-40 group-hover:opacity-80 transition-all duration-700" />
                       </div>
                     )}
-                    <div className="p-6 flex flex-col flex-grow">
-                      <div className="flex items-start justify-between gap-4 mb-2">
-                        <h3 className="text-lg font-semibold">{product.title}</h3>
-                        <span className="text-sm font-medium bg-foreground text-background px-2.5 py-0.5 rounded-full whitespace-nowrap">{product.price}</span>
-                      </div>
-                      <p className="text-muted-foreground text-sm leading-relaxed mb-6 flex-grow">{product.description}</p>
-                      {product.url && (
-                        <div className="pt-4 border-t border-border/50 mt-auto">
-                          <a
-                            href={product.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm font-medium group/link flex items-center hover:text-primary transition-colors w-fit"
-                          >
-                            View Details
-                            <ArrowRightIcon className="ml-1 size-4 transition-transform group-hover/link:translate-x-1" />
-                          </a>
-                        </div>
-                      )}
+                    <div className="flex items-baseline justify-between gap-3 mb-2">
+                      <h3 className="text-sm text-white/60 group-hover:text-white/90 transition-colors duration-500">{product.title}</h3>
+                      <span className="text-[10px] text-white/30 font-mono shrink-0">{product.price}</span>
                     </div>
+                    <p className="text-xs text-white/30 leading-relaxed mb-4">{product.description}</p>
+                    {product.url && (
+                      <a href={product.url} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-[10px] tracking-[0.2em] uppercase text-white/30 hover:text-white/70 transition-colors duration-500">
+                        View <ArrowRightIcon className="size-3" />
+                      </a>
+                    )}
                   </div>
-                </StaggerItem>
+                </AnimateIn>
               ))}
-            </StaggerChildren>
+            </div>
           </section>
         )}
 
         {isSectionVisible(visibleSections, "history") && content.history && content.history.length > 0 && (
-          <section id="history" className="space-y-12">
+          <section id="history" className="py-24 border-b border-white/5">
             <AnimateIn>
-              <div className="flex items-center justify-between border-b border-border/50 pb-4">
-                <h2 className="text-2xl font-semibold">Experience</h2>
-              </div>
+              <p className="text-[10px] tracking-[0.4em] uppercase text-white/20 mb-12">Experience</p>
             </AnimateIn>
-
-            <div className="space-y-10 pl-4 border-l-2 border-muted">
+            <div className="space-y-0">
               {content.history.map((item, i) => (
-                <AnimateIn key={i} from="bottom" delay={i * 0.1}>
-                  <div className="relative pl-6">
-                    <div className="absolute -left-[27px] top-1.5 size-4 rounded-full bg-background border-2 border-foreground"></div>
-                    <p className="text-sm font-semibold tracking-wide text-muted-foreground mb-1">{item.period}</p>
-                    <h3 className="text-xl font-semibold text-foreground mb-1">{item.role}</h3>
-                    <p className="text-base text-foreground/80 font-medium mb-3">{item.company}</p>
-                    <p className="text-muted-foreground leading-relaxed max-w-3xl">{item.description}</p>
+                <AnimateIn key={i} delay={i * 0.08} from="bottom">
+                  <div className="py-5 border-b border-white/5 last:border-0 grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-3 sm:gap-10">
+                    <div>
+                      <span className="font-mono text-[10px] text-white/20 block">{item.period}</span>
+                      <span className="text-xs text-white/35 mt-1 block">{item.company}</span>
+                    </div>
+                    <div>
+                      <h3 className="text-sm text-white/60 mb-2">{item.role}</h3>
+                      <p className="text-xs text-white/30 leading-relaxed">{item.description}</p>
+                    </div>
                   </div>
                 </AnimateIn>
               ))}
@@ -247,53 +219,38 @@ export function GalleryTemplate({ content }: { content: PortfolioContent }) {
         )}
 
         {isSectionVisible(visibleSections, "testimonials") && content.testimonials && content.testimonials.length > 0 && (
-          <section id="testimonials" className="space-y-12">
+          <section id="testimonials" className="py-24 border-b border-white/5">
             <AnimateIn>
-              <div className="flex items-center justify-between border-b border-border/50 pb-4">
-                <h2 className="text-2xl font-semibold">Client Feedback</h2>
-              </div>
+              <p className="text-[10px] tracking-[0.4em] uppercase text-white/20 mb-16">Testimonials</p>
             </AnimateIn>
-
-            <StaggerChildren stagger={0.1} className="grid sm:grid-cols-2 gap-6">
+            <div className="space-y-16">
               {content.testimonials.map((t, i) => (
-                <StaggerItem key={i}>
-                  <div className="border border-border/50 bg-muted/10 p-8 h-full flex flex-col hover:border-foreground/30 transition-colors">
-                    <div className="mb-6 flex-grow">
-                      <svg className="size-8 text-muted-foreground/30 mb-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-                      </svg>
-                      <p className="text-lg text-foreground/90 leading-relaxed font-medium">"{t.quote}"</p>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-foreground">{t.author}</p>
-                      {t.role && <p className="text-sm text-muted-foreground mt-0.5">{t.role}</p>}
-                    </div>
-                  </div>
-                </StaggerItem>
+                <AnimateIn key={i} delay={i * 0.1}>
+                  <blockquote className="max-w-3xl">
+                    <p className="text-2xl sm:text-3xl font-serif font-light text-white/50 leading-[1.5] italic mb-6">
+                      &ldquo;{t.quote}&rdquo;
+                    </p>
+                    <footer className="text-[10px] tracking-[0.3em] uppercase text-white/20">
+                      {t.author}{t.role}
+                    </footer>
+                  </blockquote>
+                </AnimateIn>
               ))}
-            </StaggerChildren>
+            </div>
           </section>
         )}
 
         {isSectionVisible(visibleSections, "faq") && content.faq && content.faq.length > 0 && (
-          <section id="faq" className="space-y-12">
+          <section id="faq" className="py-24 border-b border-white/5">
             <AnimateIn>
-              <div className="flex items-center justify-between border-b border-border/50 pb-4">
-                <h2 className="text-2xl font-semibold">Frequently Asked Questions</h2>
-              </div>
+              <p className="text-[10px] tracking-[0.4em] uppercase text-white/20 mb-12">FAQ</p>
             </AnimateIn>
-
-            <div className="space-y-8 max-w-3xl">
+            <div className="space-y-0 max-w-2xl">
               {content.faq.map((f, i) => (
-                <AnimateIn key={i} from="bottom" delay={i * 0.1}>
-                  <div className="group">
-                    <h3 className="text-xl font-semibold text-foreground mb-3 flex items-start gap-4">
-                      <span className="text-muted-foreground font-mono mt-0.5">Q.</span>
-                      {f.question}
-                    </h3>
-                    <div className="pl-9 text-muted-foreground leading-relaxed">
-                      {f.answer}
-                    </div>
+                <AnimateIn key={i} delay={i * 0.07} from="bottom">
+                  <div className="py-6 border-b border-white/5 last:border-0">
+                    <h3 className="text-sm text-white/50 mb-3">{f.question}</h3>
+                    <p className="text-xs text-white/25 leading-relaxed">{f.answer}</p>
                   </div>
                 </AnimateIn>
               ))}
@@ -302,25 +259,19 @@ export function GalleryTemplate({ content }: { content: PortfolioContent }) {
         )}
 
         {isSectionVisible(visibleSections, "gallery") && content.gallery && content.gallery.length > 0 && (
-          <section id="gallery" className="space-y-12">
+          <section id="gallery" className="py-24 border-b border-white/5">
             <AnimateIn>
-              <div className="flex items-center justify-between border-b border-border/50 pb-4">
-                <h2 className="text-2xl font-semibold">Gallery</h2>
-              </div>
+              <p className="text-[10px] tracking-[0.4em] uppercase text-white/20 mb-12">Gallery</p>
             </AnimateIn>
-
-            <StaggerChildren stagger={0.1} className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <StaggerChildren stagger={0.05} className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {content.gallery.map((g, i) => (
                 <StaggerItem key={i}>
-                  <div className="group relative aspect-square overflow-hidden bg-muted/30">
-                    <img
-                      src={g.url}
-                      alt={g.caption}
-                      className="object-cover w-full h-full grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105"
-                    />
+                  <div className="group relative aspect-square overflow-hidden bg-white/5">
+                    <img src={g.url} alt={g.caption}
+                      className="object-cover w-full h-full opacity-50 group-hover:opacity-80 grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105" />
                     {g.caption && (
-                      <div className="absolute inset-0 bg-background/80 flex flex-col justify-center items-center p-4 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <p className="text-sm font-semibold text-foreground">{g.caption}</p>
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-3 bg-gradient-to-t from-black/60">
+                        <p className="text-[9px] tracking-widest uppercase text-white/60">{g.caption}</p>
                       </div>
                     )}
                   </div>
@@ -331,85 +282,53 @@ export function GalleryTemplate({ content }: { content: PortfolioContent }) {
         )}
 
         {isSectionVisible(visibleSections, "cta") && (
-          <section id="contact" className="py-24 border-t border-border/50">
+          <section id="contact" className="py-32">
             <AnimateIn>
-              <div className="max-w-2xl space-y-6">
-                <h2 className="text-4xl sm:text-5xl font-semibold text-balance tracking-tight">
-                  {content.cta.headline}
-                </h2>
-                <p className="text-lg text-muted-foreground max-w-xl text-balance">
-                  {content.cta.subtext}
-                </p>
-                <div className="pt-6">
-                  <Button asChild size="lg" className="rounded-none px-8 h-12 font-medium group">
-                    <a href="#contact">
-                      {content.hero.ctaText}
-                      <ArrowRightIcon className="ml-2 size-5 transition-transform group-hover:translate-x-1" />
-                    </a>
-                  </Button>
-                </div>
-              </div>
+              <p className="text-[10px] tracking-[0.4em] uppercase text-white/20 mb-12">Contact</p>
+              <h2 className="text-4xl sm:text-5xl font-serif font-light text-white/80 leading-[1.2] tracking-tight text-balance mb-8 max-w-2xl">
+                {content.cta.headline}
+              </h2>
+              <p className="text-sm text-white/30 font-light leading-relaxed mb-10 max-w-sm">{content.cta.subtext}</p>
+              <a href="#contact"
+                className="inline-flex items-center gap-3 text-xs tracking-[0.25em] uppercase text-white/40 border border-white/10 hover:border-white/30 hover:text-white/70 px-7 py-3.5 transition-all duration-500">
+                {content.hero.ctaText} <ArrowRightIcon className="size-3" />
+              </a>
             </AnimateIn>
           </section>
         )}
-      </div>
+      </main>
 
       <AnimatePresence>
-        {isGalleryOpen && selectedProject !== null && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-sm"
-            onClick={closeProject}
-          >
-            <button
-              onClick={(e) => { e.stopPropagation(); closeProject(); }}
-              className="absolute top-6 right-6 p-2 text-muted-foreground hover:text-foreground transition-colors z-10"
-            >
+        {isLightboxOpen && selectedProject !== null && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-50 bg-black/97 backdrop-blur-sm flex items-center justify-center" onClick={closeProject}>
+            <button onClick={(e) => { e.stopPropagation(); closeProject(); }}
+              className="absolute top-6 right-6 text-white/30 hover:text-white/80 transition-colors z-10">
               <XIcon className="size-6" />
             </button>
-
-            <button
-              onClick={(e) => { e.stopPropagation(); goToProject("prev"); }}
-              className="absolute left-4 sm:left-8 p-3 text-muted-foreground hover:text-foreground transition-colors z-10"
-            >
+            <button onClick={(e) => { e.stopPropagation(); goToProject("prev"); }}
+              className="absolute left-4 sm:left-8 text-white/20 hover:text-white/60 transition-colors z-10">
               <ChevronLeftIcon className="size-8" />
             </button>
-
-            <button
-              onClick={(e) => { e.stopPropagation(); goToProject("next"); }}
-              className="absolute right-4 sm:right-8 p-3 text-muted-foreground hover:text-foreground transition-colors z-10"
-            >
+            <button onClick={(e) => { e.stopPropagation(); goToProject("next"); }}
+              className="absolute right-4 sm:right-8 text-white/20 hover:text-white/60 transition-colors z-10">
               <ChevronRightIcon className="size-8" />
             </button>
-
-            <motion.div
-              key={selectedProject}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-              className="relative max-w-4xl w-full mx-16"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="grid md:grid-cols-2 gap-12 items-center">
-                <div className="aspect-square bg-muted/30 flex items-center justify-center relative">
-                  <span className="text-muted-foreground/30 text-8xl font-bold">
-                    {selectedProject + 1}
-                  </span>
+            <motion.div key={selectedProject} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.3 }} className="relative max-w-4xl w-full mx-16 px-4" onClick={(e) => e.stopPropagation()}>
+              <div className="grid md:grid-cols-2 gap-14 items-center">
+                <div className="aspect-square bg-white/5 flex items-center justify-center">
+                  <span className="text-8xl font-serif font-light text-white/10">{selectedProject + 1}</span>
                 </div>
-                <div className="space-y-6">
-                  <h3 className="text-3xl sm:text-4xl font-semibold">
-                    {content.projects[selectedProject].title}
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed text-lg">
-                    {content.projects[selectedProject].description}
+                <div className="space-y-5">
+                  <p className="text-[9px] tracking-[0.4em] uppercase text-white/20 font-mono">
+                    {String(selectedProject + 1).padStart(2, "0")} / {String(content.projects.length).padStart(2, "0")}
                   </p>
-                  <div className="pt-6 border-t border-border/50">
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Outcome</p>
-                    <p className="text-foreground">{content.projects[selectedProject].result}</p>
+                  <h3 className="text-3xl font-serif font-light text-white/80">{content.projects[selectedProject].title}</h3>
+                  <p className="text-sm text-white/40 leading-relaxed">{content.projects[selectedProject].description}</p>
+                  <div className="pt-4 border-t border-white/5">
+                    <p className="text-[10px] tracking-widest uppercase text-white/20 mb-1.5">Outcome</p>
+                    <p className="text-xs text-white/35">{content.projects[selectedProject].result}</p>
                   </div>
                 </div>
               </div>
@@ -418,12 +337,14 @@ export function GalleryTemplate({ content }: { content: PortfolioContent }) {
         )}
       </AnimatePresence>
 
-      <footer className="border-t py-8 mt-12">
-        <div className="mx-auto max-w-5xl px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} {content.hero.headline}</p>
-          <div className="flex items-center gap-4">
+      <footer className="border-t border-white/5 py-7">
+        <div className="mx-auto max-w-6xl px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-[9px] tracking-[0.3em] uppercase text-white/20">
+            &copy; {new Date().getFullYear()} {content.name || content.hero.headline}
+          </p>
+          <div className="flex items-center gap-6">
             <SocialLinks socialLinks={content.socialLinks} />
-            <ThemeSwitcher />
+            <div className="opacity-25 hover:opacity-60 transition-opacity"><ThemeSwitcher /></div>
           </div>
         </div>
       </footer>

@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 
-import { Cloud, Cpu, Shield, ChevronRight } from 'lucide-react'
+import { ChevronRight, Shield, Cloud, Cpu } from 'lucide-react'
 import { Vercel } from '@/components/ui/svgs/vercel'
 import { Supabase } from '@/components/ui/svgs/supabase'
 import { Linear } from '@/components/ui/svgs/linear'
@@ -29,9 +29,9 @@ export default function Features() {
                             size="sm"
                             asChild
                             className="gap-1 pr-1.5">
-                            <Link href="/auth/signup">
-                                See your portfolio in 2 minutes
-                                <ChevronRight />
+                            <Link href="/auth/signup" title="Get started">
+                                Get started
+                                <ChevronRight aria-hidden="true" />
                             </Link>
                         </Button>
                     </div>
@@ -40,32 +40,29 @@ export default function Features() {
                             onClick={() => setFeature('seamless-integrations')}
                             data-selected={feature === 'seamless-integrations'}
                             className="not-data-[selected=true]:hover:text-foreground not-data-[selected=true]:text-muted-foreground flex items-center gap-3 py-2 text-sm">
-                            <div className="flex size-4 items-center -space-x-2">
-                                <div className="size-3 shrink-0 rounded-full border border-current"></div>
-                                <div className="size-3 shrink-0 rounded-full border border-current"></div>
-                            </div>
-                            <span className="in-data-[selected=true]:text-shadow-[0.2px_0_0_currentColor]">24/7 Discovery Assistant</span>
+                            <span className="text-xs font-mono tracking-widest text-muted-foreground/50 mr-2 group-data-[selected=true]:text-foreground/80">01</span>
+                            <span className="in-data-[selected=true]:text-shadow-[0.2px_0_0_currentColor]">Always Available</span>
                         </button>
                         <button
                             onClick={() => setFeature('real-time-sync')}
                             data-selected={feature === 'real-time-sync'}
-                            className="not-data-[selected=true]:hover:text-foreground not-data-[selected=true]:text-muted-foreground flex items-center gap-3 py-2 text-sm">
-                            <Cloud className="size-4" />
-                            <span className="in-data-[selected=true]:text-shadow-[0.2px_0_0_currentColor]">Lead Confidence Scoring</span>
+                            className="group not-data-[selected=true]:hover:text-foreground not-data-[selected=true]:text-muted-foreground flex items-center gap-3 py-3 text-sm transition-colors border-b border-border/40">
+                            <span className="text-xs font-mono tracking-widest text-muted-foreground/50 mr-2 group-data-[selected=true]:text-foreground/80">02</span>
+                            <span className="in-data-[selected=true]:text-shadow-[0.2px_0_0_currentColor]">Lead Generation</span>
                         </button>
                         <button
                             onClick={() => setFeature('developer-first')}
                             data-selected={feature === 'developer-first'}
-                            className="not-data-[selected=true]:hover:text-foreground not-data-[selected=true]:text-muted-foreground flex items-center gap-3 py-2 text-sm">
-                            <Cpu className="size-4" />
-                            <span className="in-data-[selected=true]:text-shadow-[0.2px_0_0_currentColor]">Consultative Sales Mode</span>
+                            className="group not-data-[selected=true]:hover:text-foreground not-data-[selected=true]:text-muted-foreground flex items-center gap-3 py-3 text-sm transition-colors border-b border-border/40">
+                            <span className="text-xs font-mono tracking-widest text-muted-foreground/50 mr-2 group-data-[selected=true]:text-foreground/80">03</span>
+                            <span className="in-data-[selected=true]:text-shadow-[0.2px_0_0_currentColor]">Personality Matching</span>
                         </button>
                         <button
                             onClick={() => setFeature('enterprise-ready')}
                             data-selected={feature === 'enterprise-ready'}
-                            className="not-data-[selected=true]:hover:text-foreground not-data-[selected=true]:text-muted-foreground flex items-center gap-3 py-2 text-sm">
-                            <Shield className="size-4" />
-                            <span className="in-data-[selected=true]:text-shadow-[0.2px_0_0_currentColor]">Calendar-Ready Booking</span>
+                            className="group not-data-[selected=true]:hover:text-foreground not-data-[selected=true]:text-muted-foreground flex items-center gap-3 py-3 text-sm transition-colors border-b border-border/40">
+                            <span className="text-xs font-mono tracking-widest text-muted-foreground/50 mr-2 group-data-[selected=true]:text-foreground/80">04</span>
+                            <span className="in-data-[selected=true]:text-shadow-[0.2px_0_0_currentColor]">Knowledge Base</span>
                         </button>
                     </div>
                 </div>

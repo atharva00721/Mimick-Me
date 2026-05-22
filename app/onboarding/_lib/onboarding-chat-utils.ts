@@ -16,8 +16,6 @@ const CONFIRM_PHRASES = [
   "does that work",
   "should we go with",
 ];
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyPart = Record<string, any>;
 
 export type MessagePartLike = {

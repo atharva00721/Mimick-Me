@@ -24,7 +24,7 @@ const PREVIEW_JSX =
   "{projectsSection}" +
   "{existingSiteSection}" +
   "<div className=\"flex flex-wrap items-center justify-between gap-3 pt-2\">" +
-  '<p className="text-muted-foreground text-xs">ref.io/' + "{data.handle}" + " · " + "{data.tone}" + "</p>" +
+  '<p className="text-muted-foreground text-xs">Mimick.me.io/' + "{data.handle}" + " · " + "{data.tone}" + "</p>" +
   "<div className=\"flex gap-2 shrink-0\"><EditButton /><ConfirmButton /></div></div></CardContent></Card>";
 
 export function OnboardingMessageResponse({ children }: { children: string }) {

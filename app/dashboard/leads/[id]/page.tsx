@@ -1,4 +1,4 @@
-import { getSession } from "@/auth"
+import { getSession } from "@/lib/auth/server"
 import { redirect, notFound } from "next/navigation"
 import { and, desc, eq } from "drizzle-orm"
 
@@ -63,6 +63,7 @@ export default async function LeadDetailPage({
       projectDetails: lead.projectDetails,
     }),
     timeline: extractTimeline(lead.projectDetails),
+    enrichment: lead.enrichment,
   }
 
   return <LeadDetailClient lead={formattedLead} />

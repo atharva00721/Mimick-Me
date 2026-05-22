@@ -1,36 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ApiError, fetchJson } from "@/lib/http/fetch-json";
+import { useMemo, useState } from "react";
+import { ApiError } from "@/lib/http/fetch-json";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, File, Loader2, AlertCircle } from "lucide-react";
-import { FileUpload, UploadedFilePreview } from "@/components/knowledge/file-upload";
-
-interface KnowledgeSource {
-  id: string;
-  title: string;
-  content: string;
-  type: string;
-  fileUrl: string | null;
-  fileSize: number | null;
-  mimeType: string | null;
-  status: string;
-  chunkCount: number;
-}
-
-const MAX_CONTENT_CHARS = 20_000;
-
-function fetchKnowledge(): Promise<{ sources: KnowledgeSource[] }> {
-  return fetchJson("/api/knowledge");
-}
+import { Badge } from "@/components/ui/badge";
+import {
+  FileText,
+  File,
+  Loader2,
+  AlertCircle,
+  Search,
+  Type,
+  Trash2,
+  Edit2,
+  Database,
+  ExternalLink,
+  Layout,
+  Save,
+} from "lucide-react";
+import { AddKnowledgeModal } from "./_components/add-knowledge-modal";
+import { useKnowledgeMutations } from "./_hooks/use-knowledge-mutations";
+import { useKnowledgeQuery } from "./_hooks/use-knowledge-query";
+import { KnowledgeSource } from "./types";
 
 function formatFileSize(bytes: number | null) {
   if (!bytes) return "";
@@ -40,150 +38,119 @@ function formatFileSize(bytes: number | null) {
 }
 
 export function KnowledgeClient() {
-  const queryClient = useQueryClient();
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [websiteUrl, setWebsiteUrl] = useState("");
-  const [isScraping, setIsScraping] = useState(false);
-  const [inputMode, setInputMode] = useState<"text" | "file" | "website">("text");
+  const [searchQuery, setSearchQuery] = useState("");
   const [editing, setEditing] = useState<KnowledgeSource | null>(null);
-  const [uploadedFile, setUploadedFile] = useState<{
-    fileUrl: string;
-    fileName: string;
-    mimeType: string;
-    fileSize: number;
-  } | null>(null);
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["knowledge"],
-    queryFn: fetchKnowledge,
-  });
+  const { data, isLoading, isError, error } = useKnowledgeQuery();
+  const { addMutation, deleteMutation, editMutation, scrapeMutation } = useKnowledgeMutations();
 
-  const addMutation = useMutation({
-    mutationFn: async (body: { title: string; content?: string; fileUrl?: string; mimeType?: string; fileSize?: number; type?: string }) => {
-      await fetchJson("/api/knowledge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["knowledge"] });
-      setTitle("");
-      setContent("");
-      setWebsiteUrl("");
-      setUploadedFile(null);
-      setInputMode("text");
-    },
-  });
+  const sources = useMemo(() => data?.sources ?? [], [data]);
+  const filteredSources = useMemo(() => {
+    if (!searchQuery.trim()) return sources;
+    const query = searchQuery.toLowerCase();
+    return sources.filter(
+      (source) => source.title.toLowerCase().includes(query) || (source.content && source.content.toLowerCase().includes(query)),
+    );
+  }, [sources, searchQuery]);
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await fetchJson(`/api/knowledge/${id}`, { method: "DELETE" });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["knowledge"] });
-    },
-  });
+  const stats = useMemo(() => {
+    return {
+      total: sources.length,
+      pdf: sources.filter((source) => source.type === "pdf").length,
+      text: sources.filter((source) => source.type === "text").length,
+      processing: sources.filter((source) => source.status === "processing" || source.status === "pending").length,
+    };
+  }, [sources]);
 
-  const editMutation = useMutation({
-    mutationFn: async ({ id, title, content }: { id: string; title: string; content: string }) => {
-      await fetchJson(`/api/knowledge/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, content }),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["knowledge"] });
-      setEditing(null);
-    },
-  });
-
-  const handleAddText = () => {
-    if (!title.trim() || !content.trim()) return;
-    addMutation.mutate({ title, content, type: "text" });
+  const handleAddText = async ({ title, content }: { title: string; content: string }) => {
+    await addMutation.mutateAsync({ title, content, type: "text" });
   };
 
-  const handleAddFile = () => {
-    if (!uploadedFile) return;
-    const fileTitle = uploadedFile.fileName.replace(/\.pdf$/i, "");
-    const finalTitle = title.trim() || fileTitle;
-    addMutation.mutate({
-      title: finalTitle,
-      fileUrl: uploadedFile.fileUrl,
-      mimeType: uploadedFile.mimeType,
-      fileSize: uploadedFile.fileSize,
+  const handleAddFile = async ({
+    title,
+    file,
+  }: {
+    title: string;
+    file: { fileUrl: string; mimeType: string; fileSize: number };
+  }) => {
+    await addMutation.mutateAsync({
+      title,
+      fileUrl: file.fileUrl,
+      mimeType: file.mimeType,
+      fileSize: file.fileSize,
       type: "pdf",
     });
   };
 
-  const handleScrapeWebsite = async () => {
-    if (!websiteUrl.trim()) return;
-    setIsScraping(true);
-    try {
-      const resp = await fetch("/api/scrape", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: websiteUrl }),
-      });
-      const data = await resp.json();
-      if (!data.success) throw new Error(data.error || "Scrape failed");
-
-      const finalTitle = title.trim() || `Website: ${websiteUrl.replace(/^https?:\/\//, "")}`;
-      addMutation.mutate({
-        title: finalTitle,
-        content: data.text,
-        type: "text",
-      });
-    } catch (err) {
-      console.error("Scrape error:", err);
-      // toast or alert would be good here
-    } finally {
-      setIsScraping(false);
+  const handleAddWebsite = async ({ title, url }: { title: string; url: string }) => {
+    const scraped = await scrapeMutation.mutateAsync({ url });
+    if (!scraped.success) {
+      throw new Error(scraped.error || "Scrape failed");
     }
+
+    const finalTitle = title || `Website: ${url.replace(/^https?:\/\//, "")}`;
+    await addMutation.mutateAsync({
+      title: finalTitle,
+      content: scraped.text,
+      type: "text",
+    });
   };
 
-  const sources = data?.sources ?? [];
-  const status = error instanceof ApiError ? error.status : null;
-  const message = error instanceof Error ? error.message : null;
+  const apiStatus = error instanceof ApiError ? error.status : null;
+  const apiMessage = error instanceof Error ? error.message : null;
 
   const getStatusBadge = (sourceStatus: string) => {
     switch (sourceStatus) {
       case "processing":
         return (
-          <span className="flex items-center gap-1 text-xs text-blue-500">
-            <Loader2 className="h-3 w-3 animate-spin" />
+          <Badge
+            variant="secondary"
+            className="flex items-center gap-1.5 px-2 py-0 h-5 bg-blue-500/10 text-blue-500 border-none font-medium text-[10px] uppercase tracking-wider"
+          >
+            <Loader2 className="h-2.5 w-2.5 animate-spin" />
             Processing
-          </span>
+          </Badge>
         );
       case "failed":
         return (
-          <span className="flex items-center gap-1 text-xs text-red-500">
-            <AlertCircle className="h-3 w-3" />
+          <Badge
+            variant="secondary"
+            className="flex items-center gap-1.5 px-2 py-0 h-5 bg-red-500/10 text-red-500 border-none font-medium text-[10px] uppercase tracking-wider"
+          >
+            <AlertCircle className="h-2.5 w-2.5" />
             Failed
-          </span>
+          </Badge>
         );
       case "pending":
-        return <span className="text-xs text-yellow-500">Pending</span>;
+        return (
+          <Badge
+            variant="secondary"
+            className="px-2 py-0 h-5 bg-yellow-500/10 text-yellow-500 border-none font-medium text-[10px] uppercase tracking-wider"
+          >
+            Pending
+          </Badge>
+        );
       default:
         return null;
     }
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 pb-10">
       {isError && (
-        <Card>
+        <Card className="border-red-500/20 bg-red-500/5">
           <CardHeader>
-            <CardTitle>{status === 401 ? "Sign in required" : "Unable to load knowledge base"}</CardTitle>
+            <CardTitle className="text-red-500 flex items-center gap-2 font-normal">
+              <AlertCircle className="h-5 w-5" />
+              {apiStatus === 401 ? "Sign in required" : "Unable to load knowledge base"}
+            </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            <p className="text-sm text-muted-foreground">
-              {status === 401 ? "Your session expired. Please sign in again." : message ?? "Request failed."}
+            <p className="text-sm text-muted-foreground font-normal">
+              {apiStatus === 401 ? "Your session expired. Please sign in again." : apiMessage ?? "Request failed."}
             </p>
-            {status === 401 ? (
-              <Button asChild variant="outline" className="w-fit">
+            {apiStatus === 401 ? (
+              <Button asChild variant="outline" className="w-fit rounded-full font-normal">
                 <Link href="/auth/signin">Sign in</Link>
               </Button>
             ) : null}
@@ -191,226 +158,220 @@ export function KnowledgeClient() {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Add Knowledge</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder={inputMode === "file" ? "Title (auto-generated if empty)" : "Source title"}
-          />
-
-          <div className="flex gap-2 border-b">
-            <button
-              onClick={() => setInputMode("text")}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${inputMode === "text"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-            >
-              Text
-            </button>
-            <button
-              onClick={() => setInputMode("file")}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${inputMode === "file"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-            >
-              Upload PDF
-            </button>
-            <button
-              onClick={() => setInputMode("website")}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${inputMode === "website"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-            >
-              Website
-            </button>
+      <Card className="border-primary/5 bg-background/50 backdrop-blur-md">
+        <CardHeader className="space-y-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="space-y-1">
+              <h1 className="text-3xl tracking-tight font-normal">Knowledge Command Center</h1>
+              <p className="text-sm text-muted-foreground max-w-2xl font-normal">
+                Feed your AI agent with documentation, websites, and data to make it smarter and more helpful.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="h-7 px-3 rounded-full border-primary/20 bg-primary/5 font-normal">
+                {stats.processing > 0 ? (
+                  <span className="flex items-center gap-1.5 font-normal">
+                    <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                    {stats.processing} processing
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5 font-normal">
+                    <Database className="h-3 w-3 text-primary" />
+                    System Active
+                  </span>
+                )}
+              </Badge>
+              <AddKnowledgeModal
+                onAddText={handleAddText}
+                onAddFile={handleAddFile}
+                onAddWebsite={handleAddWebsite}
+                isPending={addMutation.isPending}
+                isScraping={scrapeMutation.isPending}
+              />
+            </div>
           </div>
 
-          {inputMode === "text" ? (
-            <div className="space-y-3">
-              <Textarea
-                value={content}
-                onChange={(event) => setContent(event.target.value)}
-                placeholder="Add text content for your AI agent"
-                className="min-h-[160px]"
-                maxLength={MAX_CONTENT_CHARS}
-              />
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{content.length}/{MAX_CONTENT_CHARS} characters</span>
-                <Button
-                  onClick={handleAddText}
-                  disabled={addMutation.isPending || !title.trim() || !content.trim()}
-                >
-                  {addMutation.isPending ? "Adding..." : "Add Text"}
-                </Button>
+          <div className="grid gap-4 sm:grid-cols-4">
+            <div className="rounded-xl border border-primary/5 bg-background/70 p-4 shadow-sm">
+              <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Total Sources</p>
+              <p className="mt-1 text-2xl font-normal tracking-tight">{stats.total}</p>
+            </div>
+            <div className="rounded-xl border border-primary/5 bg-background/70 p-4 shadow-sm">
+              <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">PDF Documents</p>
+              <p className="mt-1 text-2xl font-normal tracking-tight">{stats.pdf}</p>
+            </div>
+            <div className="rounded-xl border border-primary/5 bg-background/70 p-4 shadow-sm">
+              <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Text Snippets</p>
+              <p className="mt-1 text-2xl font-normal tracking-tight">{stats.text}</p>
+            </div>
+            <div className="rounded-xl border border-primary/5 bg-background/70 p-4 shadow-sm">
+              <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Status</p>
+              <div className="mt-1 flex items-center gap-1.5">
+                <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                <p className="text-sm font-normal">Ready to serve</p>
               </div>
             </div>
-          ) : inputMode === "file" ? (
-            <div className="space-y-3">
-              <FileUpload
-                onUploadComplete={(result) => {
-                  setUploadedFile(result);
-                }}
-                disabled={addMutation.isPending}
-              />
-              {uploadedFile && (
-                <div className="space-y-2">
-                  <UploadedFilePreview
-                    fileName={uploadedFile.fileName}
-                    fileSize={uploadedFile.fileSize}
-                    status="ready"
-                    onRemove={() => setUploadedFile(null)}
-                  />
-                  <Button
-                    onClick={handleAddFile}
-                    disabled={addMutation.isPending}
-                    className="w-full"
-                  >
-                    {addMutation.isPending ? "Processing..." : "Add PDF"}
-                  </Button>
-                  <p className="text-xs text-muted-foreground text-center">
-                    Title will be auto-generated using AI
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <Input
-                value={websiteUrl}
-                onChange={(event) => setWebsiteUrl(event.target.value)}
-                placeholder="https://example.com"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Enter a URL to scrape text content from the website.
-              </p>
-              <div className="flex justify-end">
-                <Button
-                  onClick={handleScrapeWebsite}
-                  disabled={isScraping || addMutation.isPending || !websiteUrl.trim()}
-                >
-                  {isScraping || addMutation.isPending ? "Scraping..." : "Add Website"}
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
+          </div>
+        </CardHeader>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Knowledge Sources</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[420px] pr-4">
-            <div className="space-y-3">
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-2">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+              <Layout className="h-4 w-4" />
+            </div>
+            <h2 className="text-xl font-normal tracking-tight">Managed Information</h2>
+          </div>
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search sources..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 bg-background/50 border-primary/10 rounded-full h-9 text-xs focus-visible:ring-primary/20 font-normal"
+            />
+          </div>
+        </div>
+
+        <Card className="border-primary/5 shadow-2xl shadow-primary/5 bg-background/40 backdrop-blur-sm border-2 overflow-hidden">
+          <CardContent className="p-0">
+            <ScrollArea className="h-[700px]">
               {isLoading ? (
-                Array.from({ length: 3 }).map((_, i) => (
-                  <Card key={i}>
-                    <CardContent className="p-4">
-                      <Skeleton className="h-5 w-32 mb-2" />
-                      <Skeleton className="h-4 w-24" />
-                    </CardContent>
-                  </Card>
-                ))
-              ) : sources.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No knowledge sources yet</p>
+                <div className="p-6 space-y-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-4 p-4 rounded-2xl border border-primary/5 bg-background/50">
+                      <Skeleton className="h-10 w-10 rounded-xl" />
+                      <div className="space-y-2 flex-1">
+                        <Skeleton className="h-4 w-40" />
+                        <Skeleton className="h-3 w-20" />
+                      </div>
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                    </div>
+                  ))}
+                </div>
+              ) : filteredSources.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+                  <div className="size-16 bg-muted/50 rounded-full flex items-center justify-center mb-4">
+                    <Search className="h-8 w-8 text-muted-foreground/30" />
+                  </div>
+                  <h3 className="text-lg font-normal tracking-tight">No results found</h3>
+                  <p className="text-sm text-muted-foreground mt-1 max-w-[250px] font-normal">
+                    {searchQuery ? `No sources matching "${searchQuery}"` : "Your knowledge base is currently empty. Add your first source with Add Knowledge."}
+                  </p>
+                </div>
               ) : (
-                sources.map((source) => (
-                  <Card key={source.id}>
-                    <CardContent className="flex items-start justify-between gap-4 p-4">
-                      <div className="flex items-start gap-3">
-                        {source.type === "pdf" ? (
-                          <FileText className="h-5 w-5 text-primary mt-0.5" />
-                        ) : (
-                          <File className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        )}
-                        <div>
-                          <h3 className="font-medium">{source.title}</h3>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            {source.type === "pdf" ? (
-                              <>
-                                <span>PDF</span>
-                                {source.fileSize && <span>({formatFileSize(source.fileSize)})</span>}
-                              </>
-                            ) : (
-                              <span>Text</span>
+                <div className="divide-y divide-primary/5">
+                  {filteredSources.map((source) => (
+                    <div key={source.id} className="group p-5 flex items-start justify-between gap-4 hover:bg-primary/[0.02] transition-colors">
+                      <div className="flex items-start gap-4">
+                        <div
+                          className={`mt-0.5 p-2.5 rounded-xl border ${
+                            source.type === "pdf" ? "bg-red-500/5 border-red-500/10 text-red-500" : "bg-primary/5 border-primary/10 text-primary"
+                          }`}
+                        >
+                          {source.type === "pdf" ? <FileText className="h-5 w-5" /> : <Type className="h-5 w-5" />}
+                        </div>
+                        <div className="space-y-1">
+                          <h3 className="text-sm font-normal tracking-tight leading-none group-hover:text-primary transition-colors">{source.title}</h3>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-muted-foreground font-normal">
+                            <span className="flex items-center gap-1 capitalize font-normal">{source.type} Source</span>
+                            {source.fileSize && (
+                              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted/50 font-normal">{formatFileSize(source.fileSize)}</span>
                             )}
-                            <span>•</span>
-                            <span>Chunks: {source.chunkCount}</span>
-                            {source.status !== "complete" && (
-                              <>
-                                <span>•</span>
-                                {getStatusBadge(source.status)}
-                              </>
-                            )}
+                            <span className="flex items-center gap-1 font-normal">
+                              <Database className="h-3 w-3" />
+                              {source.chunkCount} active chunks
+                            </span>
+                            {source.status !== "complete" && getStatusBadge(source.status)}
                           </div>
                         </div>
                       </div>
-                      <div className="flex gap-2">
+
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {source.type === "text" && (
                           <Dialog>
                             <DialogTrigger asChild>
-                              <Button variant="outline" onClick={() => setEditing(source)}>
-                                Edit
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setEditing(source)}
+                                className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10"
+                              >
+                                <Edit2 className="h-3.5 w-3.5" />
                               </Button>
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent className="sm:max-w-xl rounded-2xl border-primary/10 bg-background/95 backdrop-blur-xl">
                               <DialogHeader>
-                                <DialogTitle>Edit knowledge</DialogTitle>
+                                <DialogTitle className="font-normal tracking-tight">Edit Material</DialogTitle>
+                                <CardDescription className="font-normal">Update the title or content of this knowledge source.</CardDescription>
                               </DialogHeader>
-                              <div className="space-y-3">
-                                <Input
-                                  value={editing?.id === source.id ? editing.title : source.title}
-                                  onChange={(event) =>
-                                    setEditing((prev) =>
-                                      prev ? { ...prev, title: event.target.value } : prev
-                                    )
-                                  }
-                                />
-                                <Textarea
-                                  className="min-h-[220px]"
-                                  value={editing?.id === source.id ? editing.content : source.content}
-                                  onChange={(event) =>
-                                    setEditing((prev) =>
-                                      prev ? { ...prev, content: event.target.value } : prev
-                                    )
-                                  }
-                                />
+                              <div className="space-y-5 py-4">
+                                <div className="space-y-2">
+                                  <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground ml-1">Source Title</p>
+                                  <Input
+                                    value={editing?.id === source.id ? editing.title : source.title}
+                                    onChange={(event) => setEditing((prev) => (prev ? { ...prev, title: event.target.value } : prev))}
+                                    className="rounded-xl border-primary/10 bg-muted/30 font-normal"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground ml-1">Content Body</p>
+                                  <Textarea
+                                    className="h-[400px] rounded-xl border-primary/10 bg-muted/30 text-sm leading-relaxed font-normal resize-none"
+                                    value={editing?.id === source.id ? editing.content : source.content}
+                                    onChange={(event) => setEditing((prev) => (prev ? { ...prev, content: event.target.value } : prev))}
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex justify-end gap-3 pt-2">
                                 <Button
-                                  onClick={() =>
-                                    editing && editMutation.mutate({ id: editing.id, title: editing.title, content: editing.content })
-                                  }
-                                  disabled={editMutation.isPending}
+                                  variant="outline"
+                                  onClick={() => setEditing(null)}
+                                  className="rounded-full px-6 h-10 text-xs border-primary/10 font-normal"
                                 >
-                                  {editMutation.isPending ? "Saving..." : "Save"}
+                                  Cancel
+                                </Button>
+                                <Button
+                                  onClick={() => editing && editMutation.mutate({ id: editing.id, title: editing.title, content: editing.content })}
+                                  disabled={editMutation.isPending}
+                                  className="rounded-full px-8 h-10 text-xs shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 font-normal"
+                                >
+                                  {editMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> : <Save className="h-3.5 w-3.5 mr-2" />}
+                                  Apply Changes
                                 </Button>
                               </div>
                             </DialogContent>
                           </Dialog>
                         )}
                         <Button
-                          variant="destructive"
-                          onClick={() => deleteMutation.mutate(source.id)}
+                          variant="ghost"
+                          size="icon"
                           disabled={deleteMutation.isPending}
+                          onClick={() => {
+                            if (confirm("Are you sure you want to remove this source?")) {
+                              deleteMutation.mutate(source.id);
+                            }
+                          }}
+                          className="h-8 w-8 rounded-full text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
                         >
-                          {deleteMutation.isPending ? "..." : "Delete"}
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))
+                    </div>
+                  ))}
+                </div>
               )}
+            </ScrollArea>
+            <div className="p-4 bg-muted/5 border-t text-center">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-normal flex items-center justify-center gap-2">
+                <ExternalLink className="size-3" />
+                Processed by Vector Intelligence Engine
+              </p>
             </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/auth";
+import { getSession } from "@/lib/auth/server";
 
 export function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });

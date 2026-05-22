@@ -64,3 +64,10 @@ export function isSectionVisible(
 ) {
   return visibleSections.includes(section);
 }
+
+export function calculateSectionCount(
+  visibleSections: unknown,
+  fallback = getDefaultVisibleSections()
+): number {
+  return mergeVisibleSections(visibleSections, fallback).length;
+}

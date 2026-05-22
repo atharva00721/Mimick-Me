@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/auth";
+import { getSession } from "@/lib/auth/server";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
+import { consumeCredits, getCredits } from "@/lib/credits";
 
 const nebius = createOpenAI({
     apiKey: process.env.NEBIUS_API_KEY,
@@ -9,6 +10,7 @@ const nebius = createOpenAI({
 });
 
 const MODEL = "moonshotai/Kimi-K2.5";
+const CREDIT_COST = 1;
 
 const SYSTEM_PROMPT = `You are a portfolio content extraction engine.
 Given a raw scrape of a professional website, extract the user's details.
@@ -60,6 +62,11 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Text is required" }, { status: 400 });
         }
 
+        const currentCredits = await getCredits(session.user.id);
+        if (currentCredits < CREDIT_COST) {
+            return NextResponse.json({ error: "Not enough credits" }, { status: 402 });
+        }
+
         const response = await generateText({
             model: nebius.chat(MODEL),
             system: SYSTEM_PROMPT,
@@ -76,6 +83,12 @@ export async function POST(request: Request) {
         cleaned = cleaned.trim();
 
         const parsed = JSON.parse(cleaned);
+
+        const creditsConsumed = await consumeCredits(session.user.id, CREDIT_COST);
+        if (!creditsConsumed) {
+            return NextResponse.json({ error: "Not enough credits" }, { status: 402 });
+        }
+
         return NextResponse.json({ success: true, data: parsed });
     } catch (error) {
         console.error("[api/ai/extract-portfolio] error:", error);

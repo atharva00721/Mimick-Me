@@ -1,6 +1,6 @@
 "use client"
 
-import { authClient } from "@/auth-client"
+import { authClient } from "@/lib/auth/client"
 import { SignedUpToast } from "@/app/auth/_components/signed-up-toast"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -26,13 +26,13 @@ export default function SignIn() {
           aria-label="go home"
           className="inline-block border-t-2 border-transparent py-3"
         >
-          REF
+          Mimick.me
         </Link>
       </div>
 
       <div className="m-auto w-full max-w-sm">
         <div className="text-center">
-          <h1 className="font-serif text-4xl font-medium">Welcome back</h1>
+          <h1 className="font-serif text-4xl">Welcome back</h1>
           <p className="text-muted-foreground mt-2 text-sm">
             See your portfolio in 2 minutes
           </p>

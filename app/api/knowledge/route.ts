@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { parseJsonBody, requireUserId } from "@/lib/api/route-helpers";
 import { getUserAgent, listKnowledgeSourcesByAgentId } from "@/lib/db/knowledge";
 import { createKnowledgeSource, createKnowledgeSourceFromFile } from "@/lib/knowledge/service";
-import { parseKnowledgeInput, KnowledgeInput } from "@/lib/validation/knowledge";
+import { parseKnowledgeInput } from "@/lib/validation/knowledge";
 import { getActivePortfolio } from "@/lib/active-portfolio";
 
 export async function GET() {

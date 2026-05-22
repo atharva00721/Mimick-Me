@@ -14,8 +14,12 @@ interface AgentConfig {
   roleLabel: string;
   workingHours: { dayOfWeek: number; startTime: string; endTime: string; enabled: boolean }[];
   offDays: string[];
+  notificationEmail: string | null;
   googleCalendarEnabled: boolean;
   googleCalendarAccountEmail: string | null;
+  calendlyEnabled: boolean;
+  calendlyAccountEmail: string | null;
+  leadEnrichmentEnabled: boolean;
 }
 
 interface ChatMessage {
@@ -61,6 +65,10 @@ const defaultConfig: AgentConfig = {
   offDays: [],
   googleCalendarEnabled: false,
   googleCalendarAccountEmail: null,
+  calendlyEnabled: false,
+  calendlyAccountEmail: null,
+  leadEnrichmentEnabled: false,
+  notificationEmail: null,
 };
 
 export const useAgentStore = create<AgentState>((set) => ({

@@ -6,6 +6,7 @@ import { Slack } from '@/components/ui/svgs/slack'
 import { Firebase } from '@/components/ui/svgs/firebase'
 import { ClerkIconDark as Clerk } from '@/components/ui/svgs/clerk'
 import { Logo } from '@/components/logo'
+import { motion } from 'motion/react'
 
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -23,9 +24,9 @@ export default function Integrations() {
                         size="sm"
                         asChild
                         className="gap-1 pr-1.5">
-                        <Link href="/auth/signup">
+                        <Link href="/auth/signup" title="Learn more about integrations">
                             Learn more
-                            <ChevronRight />
+                            <ChevronRight aria-hidden="true" />
                         </Link>
                     </Button>
                 </div>

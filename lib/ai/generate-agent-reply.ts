@@ -1,4 +1,4 @@
-import { generateText, tool } from "ai";
+import { ModelMessage, generateText, tool } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { agents } from "@/lib/schema";
@@ -43,17 +43,26 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
   const hasDateOrDayRegex = /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(tember)?|oct(ober)?|nov(ember)?|dec(ember)?|today|tomorrow|next week|next month|this week|this weekend|\d{1,2}(st|nd|rd|th)?( of)?( )?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)( )?\d{1,2}|\d{1,2}\/\d{1,2})\b/i;
   const userMessageSuggestsDate = hasDateOrDayRegex.test(input.message);
 
-  if (!resolvedCalendarToken) {
+  if (!resolvedCalendarToken || input.calendlyEnabled === undefined) {
     try {
       const [agentRow] = await db
         .select()
         .from(agents)
         .where(eq(agents.id, input.agentId))
         .limit(1);
-      if (agentRow?.googleCalendarEnabled) {
-        resolvedCalendarToken = await getValidAccessToken(agentRow);
-        // Only enable the tool if we have a token AND the user seems to be asking about a real date
-        calendarEnabled = !!resolvedCalendarToken && userMessageSuggestsDate;
+
+      if (agentRow) {
+        if (agentRow.googleCalendarEnabled && !resolvedCalendarToken) {
+          resolvedCalendarToken = await getValidAccessToken(agentRow);
+          calendarEnabled = !!resolvedCalendarToken && userMessageSuggestsDate;
+        }
+
+        // Populate Calendly fields if they aren't provided in the input
+        if (input.calendlyEnabled === undefined) {
+          input.calendlyEnabled = agentRow.calendlyEnabled;
+          input.calendlyAccountEmail = agentRow.calendlyAccountEmail;
+          input.calendlySchedulingUrl = agentRow.calendlySchedulingUrl;
+        }
       }
     } catch {
       // Non-fatal — tool will gracefully return an error if token is null
@@ -62,9 +71,14 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
     calendarEnabled = userMessageSuggestsDate;
   }
 
+  const calendlyEnabled = !!input.calendlyEnabled && !!input.calendlySchedulingUrl;
+
   try {
-    let messages: any[] = [
-      ...preparedContext.history,
+    const messages: ModelMessage[] = [
+      ...preparedContext.history.map(m => ({
+        role: m.role as "user" | "assistant",
+        content: m.content
+      })),
       { role: "user", content: input.message },
     ];
 
@@ -77,7 +91,7 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
       });
 
       const result = await Promise.race([
-        (generateText as any)({
+        generateText({
           model: resolveChatModel(input.model),
           system: buildPrompt(input, preparedContext),
           messages,
@@ -85,12 +99,12 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
           maxOutputTokens: 1500,
           tools: {
             ...(calendarEnabled ? {
-              check_availability: (tool as any)({
+              check_availability: tool({
                 description: "CRITICAL: ONLY call this tool if the user explicitly provided a day, date, or relative time (like 'tomorrow'). NEVER call this tool if you don't know the exact date they want. If they just ask 'when are you free?', DO NOT call this tool — instead, ask them what day they prefer.",
-                parameters: z.object({
+                inputSchema: z.object({
                   date: z.string().describe("The date to check in YYYY-MM-DD format, e.g., 2024-02-28."),
                 }),
-                execute: async (args: any) => {
+                execute: async (args: { date: string }) => {
                   const { date } = args;
                   console.log(`[tool:check_availability] CALLED with RAW ARGS:`, JSON.stringify(args));
                   if (!date || date.trim() === "") {
@@ -164,7 +178,7 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
                       };
                     }
 
-                    const busySlots = events.items.map((event: any) => {
+                    const busySlots = events.items.map((event: { start: { dateTime?: string; date?: string }; end: { dateTime?: string; date?: string }; summary?: string }) => {
                       const startStr = event.start?.dateTime || event.start?.date;
                       const endStr = event.end?.dateTime || event.end?.date;
                       const start = startStr ? new Date(startStr) : null;
@@ -185,17 +199,31 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
                       summary: `There are ${events.items.length} events scheduled on this day.`,
                       availability: busySlots.length > 0 ? "Partially busy." : "Available."
                     };
-                  } catch (error: any) {
+                  } catch (error: unknown) {
                     console.error(`[tool:check_availability] CRITICAL ERROR in ${Date.now() - toolStart}ms:`, error);
-                    return { error: `An error occurred while checking availability: ${error.message || "Unknown error"}` };
+                    return { error: `An error occurred while checking availability: ${error instanceof Error ? error.message : "Unknown error"}` };
                   }
                 },
               }),
             } : {}),
 
-            get_current_datetime: (tool as any)({
+            ...(calendlyEnabled ? {
+              get_calendly_link: tool({
+                description: "Get the visitor's custom Calendly booking link. ONLY call this if the visitor specifically asks for a link, wants to 'book a meeting', 'schedule time', or 'see your calendar'. NEVER call this tool if Calendly is not enabled.",
+                inputSchema: z.object({}),
+                execute: async () => {
+                  console.log(`[tool:get_calendly_link] CALLED`);
+                  return {
+                    booking_url: input.calendlySchedulingUrl,
+                    instructions: "Share this link with the visitor so they can choose a time that works for them."
+                  };
+                },
+              }),
+            } : {}),
+
+            get_current_datetime: tool({
               description: "Get the current date and time. Use this when the visitor asks what time or date it is, or when you need to know the current moment to give a relevant answer.",
-              parameters: z.object({}),
+              inputSchema: z.object({}),
               execute: async () => {
                 const now = new Date();
                 console.log(`[tool:get_current_datetime] CALLED`);
@@ -208,9 +236,9 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
               },
             }),
 
-            get_current_date: (tool as any)({
+            get_current_date: tool({
               description: "Get today's date. Use this when the visitor asks what day or date it is.",
-              parameters: z.object({}),
+              inputSchema: z.object({}),
               execute: async () => {
                 const now = new Date();
                 console.log(`[tool:get_current_date] CALLED`);
@@ -222,9 +250,9 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
               },
             }),
 
-            get_current_time: (tool as any)({
+            get_current_time: tool({
               description: "Get the current time. Use this when the visitor asks what time it is.",
-              parameters: z.object({}),
+              inputSchema: z.object({}),
               execute: async () => {
                 const now = new Date();
                 console.log(`[tool:get_current_time] CALLED`);
@@ -244,29 +272,29 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
         throw new Error("generateText returned undefined result");
       }
 
-      const usage = (result as any).usage;
+      const usage = (result as { usage?: { totalTokens?: number; inputTokens?: number; outputTokens?: number } }).usage;
       totalTokens += usage?.totalTokens ?? ((usage?.inputTokens ?? 0) + (usage?.outputTokens ?? 0));
 
-      const toolCalls = (result as any).toolCalls;
+      const toolCalls = (result as { toolCalls?: Array<{ toolCallId: string; toolName: string; args: unknown }> }).toolCalls;
 
       if (toolCalls && toolCalls.length > 0) {
-        if ((result as any).response?.messages) {
-          messages.push(...(result as any).response.messages);
+        if ((result as { response?: { messages?: ModelMessage[] } }).response?.messages) {
+          messages.push(...(result as { response?: { messages?: ModelMessage[] } }).response!.messages!);
         } else {
           // Fallback if response.messages is somehow missing
-          const toolCallParts = toolCalls.map((tc: any) => ({
-            type: 'tool-call',
+          const toolCallParts = toolCalls.map((tc) => ({
+            type: 'tool-call' as const,
             toolCallId: tc.toolCallId,
             toolName: tc.toolName,
             args: tc.args
           }));
           messages.push({
             role: 'assistant',
-            content: (result as any).text ? [{ type: 'text', text: (result as any).text }, ...toolCallParts] : toolCallParts
+            content: (result as { text?: string }).text ? [{ type: 'text', text: (result as { text?: string }).text! }, ...toolCallParts] : toolCallParts
           });
-          const toolResults = (result as any).toolResults || [];
-          const toolResultParts = toolResults.map((tr: any) => ({
-            type: 'tool-result',
+          const toolResults = (result as { toolResults?: Array<{ toolCallId: string; toolName: string; result: unknown }> }).toolResults || [];
+          const toolResultParts = toolResults.map((tr) => ({
+            type: 'tool-result' as const,
             toolCallId: tr.toolCallId,
             toolName: tr.toolName,
             result: tr.result !== undefined ? tr.result : "Success"
@@ -276,7 +304,7 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
         continue; // Process next step
       }
 
-      text = (result as any).text || "";
+      text = (result as { text?: string }).text || "";
       break;
     }
 
@@ -284,7 +312,7 @@ async function requestReply(input: GenerateAgentReplyInput): Promise<{ text: str
     console.log(`[requestReply] RAW TEXT returned from model (length: ${text.length}):\n${text}`);
 
     return { text, tokens: totalTokens };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error(`[requestReply] FATAL ERROR after ${Date.now() - startTime}ms:`, err);
     if (err instanceof Error) {
       console.error("Stack:", err.stack);

@@ -1,48 +1,31 @@
-"use client";
+﻿"use client";
 
 import type { PortfolioContent } from "@/lib/validation/portfolio-schema";
 import { isSectionVisible, mergeVisibleSections } from "@/lib/portfolio/section-registry";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { LogoIcon } from "@/components/logo";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { MobileMenu } from "@/components/portfolio/mobile-menu";
 import { DesktopNav } from "@/components/portfolio/desktop-nav";
-import { ArrowRight, Check } from "lucide-react";
 import { AnimateIn, StaggerChildren, StaggerItem } from "@/components/animate-in";
+import { ArrowRightIcon } from "lucide-react";
 import { Twitter, Linkedin, Github, Instagram, Youtube, Facebook, Globe } from "lucide-react";
 
 const platformIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  twitter: Twitter,
-  linkedin: Linkedin,
-  github: Github,
-  instagram: Instagram,
-  youtube: Youtube,
-  facebook: Facebook,
-  website: Globe,
+  twitter: Twitter, linkedin: Linkedin, github: Github, instagram: Instagram,
+  youtube: Youtube, facebook: Facebook, website: Globe,
 };
 
 function SocialLinks({ socialLinks }: { socialLinks: PortfolioContent["socialLinks"] }) {
   if (!socialLinks || socialLinks.length === 0) return null;
-
-  const enabledLinks = socialLinks.filter(link => link.enabled && link.url);
+  const enabledLinks = socialLinks.filter((l) => l.enabled && l.url);
   if (enabledLinks.length === 0) return null;
-
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-5">
       {enabledLinks.map((link) => {
         const Icon = platformIcons[link.platform] || Globe;
         return (
-          <a
-            key={link.platform}
-            href={link.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label={link.platform}
-          >
-            <Icon className="size-5" />
+          <a key={link.platform} href={link.url} target="_blank" rel="noopener noreferrer"
+            className="text-stone-400 hover:text-stone-800 dark:hover:text-stone-300 transition-colors" aria-label={link.platform}>
+            <Icon className="size-4" />
           </a>
         );
       })}
@@ -54,12 +37,11 @@ export function LandingTemplate({ content }: { content: PortfolioContent }) {
   const visibleSections = mergeVisibleSections(content.visibleSections);
 
   return (
-    <div className="bg-background text-foreground min-h-screen font-sans">
-      <header className="sticky top-0 z-20 border-b bg-background/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-5">
-          <a href="#" aria-label="Back to top" className="flex items-center gap-2">
-            <LogoIcon uniColor className="size-5" />
-            <span className="text-sm font-medium tracking-wide">Portfolio</span>
+    <div className="bg-[#f7f3ec] dark:bg-stone-950 text-stone-900 dark:text-stone-100 min-h-screen font-sans">
+      <header className="sticky top-0 z-20 bg-[#f7f3ec]/95 dark:bg-stone-950/95 backdrop-blur-sm border-b border-stone-200 dark:border-stone-800">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+          <a href="#" className="text-sm font-medium text-stone-900 dark:text-stone-100 tracking-tight">
+            {content.name || content.hero.headline}
           </a>
           <DesktopNav visibleSections={visibleSections} />
           <div className="flex items-center gap-2">
@@ -69,115 +51,96 @@ export function LandingTemplate({ content }: { content: PortfolioContent }) {
         </div>
       </header>
 
-      <main className="overflow-hidden">
-        {/* Hero */}
+      <main>
+
         {isSectionVisible(visibleSections, "hero") && (
-          <section className="bg-background">
-            <div className="relative py-24 md:py-32">
-              <div className="relative z-10 mx-auto w-full max-w-5xl px-6">
-                <div className="mx-auto max-w-3xl text-center space-y-8">
-                  <AnimateIn from="bottom" duration={0.8}>
-                    <h1 className="text-balance font-serif text-5xl md:text-7xl font-medium tracking-tight text-foreground leading-[1.1]">
-                      {content.hero.headline}
-                    </h1>
-                  </AnimateIn>
-                  <AnimateIn delay={0.15}>
-                    <p className="text-muted-foreground text-balance text-xl leading-relaxed">
-                      {content.hero.subheadline}
-                    </p>
-                  </AnimateIn>
-                  <AnimateIn delay={0.3}>
-                    <div className="pt-4">
-                      <Button asChild size="lg" className="h-12 px-8 text-base group">
-                        <a href={isSectionVisible(visibleSections, "cta") ? "#contact" : "#"}>
-                          {content.hero.ctaText}
-                          <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
-                        </a>
-                      </Button>
+          <section className="border-b border-stone-200 dark:border-stone-800">
+            <div className="mx-auto max-w-5xl px-6 py-24 md:py-40">
+              <AnimateIn duration={0.8} from="bottom">
+                <h1 className="text-[clamp(2.8rem,8vw,6.5rem)] font-bold tracking-[-0.03em] leading-[1.05] text-balance text-stone-900 dark:text-stone-100">
+                  {content.hero.headline}
+                </h1>
+              </AnimateIn>
+              <AnimateIn delay={0.15}>
+                <p className="mt-8 text-lg text-stone-600 dark:text-stone-400 max-w-xl leading-relaxed">
+                  {content.hero.subheadline}
+                </p>
+              </AnimateIn>
+              <AnimateIn delay={0.28}>
+                <div className="mt-10 flex flex-wrap items-center gap-4">
+                  <a href={isSectionVisible(visibleSections, "cta") ? "#contact" : "#"}
+                    className="inline-flex items-center gap-2 px-7 py-3.5 bg-amber-800 dark:bg-amber-700 text-white text-sm font-medium hover:bg-amber-900 dark:hover:bg-amber-600 transition-colors rounded-none">
+                    {content.hero.ctaText}
+                    <ArrowRightIcon className="size-4" />
+                  </a>
+                  {isSectionVisible(visibleSections, "projects") && (
+                    <a href="#work" className="text-sm font-medium text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors underline underline-offset-4 decoration-stone-300 dark:decoration-stone-700">
+                      See my work
+                    </a>
+                  )}
+                </div>
+              </AnimateIn>
+            </div>
+          </section>
+        )}
+
+        {isSectionVisible(visibleSections, "about") && (
+          <section id="about" className="border-b border-stone-200 dark:border-stone-800">
+            <div className="mx-auto max-w-5xl px-6 py-20 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20">
+              <AnimateIn>
+                <h2 className="text-xs tracking-[0.25em] uppercase text-amber-800 dark:text-amber-600 mb-6">About</h2>
+                <p className="text-xl font-light text-stone-700 dark:text-stone-300 leading-[1.75]">
+                  {content.about.paragraph}
+                </p>
+              </AnimateIn>
+              <div className="hidden md:block" />
+            </div>
+          </section>
+        )}
+
+        {isSectionVisible(visibleSections, "services") && content.services && content.services.length > 0 && (
+          <section id="services" className="border-b border-stone-200 dark:border-stone-800">
+            <div className="mx-auto max-w-5xl px-6 py-20">
+              <AnimateIn>
+                <h2 className="text-xs tracking-[0.25em] uppercase text-amber-800 dark:text-amber-600 mb-14">Services</h2>
+              </AnimateIn>
+              <div className="space-y-0">
+                {content.services.map((service, i) => (
+                  <AnimateIn key={i} delay={i * 0.07} from="bottom">
+                    <div className="py-8 border-b border-stone-200 dark:border-stone-800 last:border-0 grid grid-cols-1 md:grid-cols-[3rem_1fr_1fr] gap-4 md:gap-10 items-start">
+                      <span className="text-sm font-bold text-amber-800 dark:text-amber-600">{String(i + 1).padStart(2, "0")}</span>
+                      <h3 className="text-base font-semibold text-stone-900 dark:text-stone-100">{service.title}</h3>
+                      <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{service.description}</p>
                     </div>
                   </AnimateIn>
-                </div>
+                ))}
               </div>
             </div>
           </section>
         )}
 
-        {/* About */}
-        {isSectionVisible(visibleSections, "about") && (
-          <section id="about" className="bg-muted/30 py-24 border-y border-border/50">
-            <div className="mx-auto max-w-5xl px-6">
-              <AnimateIn>
-                <div className="max-w-3xl">
-                  <h2 className="text-balance font-serif text-3xl md:text-4xl font-medium text-foreground mb-6">
-                    About
-                  </h2>
-                  <p className="text-muted-foreground text-xl leading-relaxed">
-                    {content.about.paragraph}
-                  </p>
-                </div>
-              </AnimateIn>
-            </div>
-          </section>
-        )}
-
-        {/* Services */}
-        {isSectionVisible(visibleSections, "services") && content.services && content.services.length > 0 && (
-          <section id="services" className="py-24">
-            <div className="mx-auto max-w-5xl px-6">
-              <AnimateIn>
-                <div className="mb-16">
-                  <h2 className="text-balance font-serif text-4xl font-medium text-foreground">Services</h2>
-                </div>
-              </AnimateIn>
-
-              <StaggerChildren stagger={0.1} className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                {content.services.map((service, i) => (
-                  <StaggerItem key={i}>
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex size-6 items-center justify-center rounded-full bg-primary/10">
-                          <Check className="size-3.5 text-primary" />
-                        </div>
-                        <h3 className="text-foreground font-medium text-lg">{service.title}</h3>
-                      </div>
-                      <p className="text-muted-foreground leading-relaxed">
-                        {service.description}
-                      </p>
-                    </div>
-                  </StaggerItem>
-                ))}
-              </StaggerChildren>
-            </div>
-          </section>
-        )}
-
-        {/* Projects */}
         {isSectionVisible(visibleSections, "projects") && content.projects && content.projects.length > 0 && (
-          <section id="work" className="bg-muted/30 py-24 border-y border-border/50">
-            <div className="mx-auto max-w-5xl px-6">
+          <section id="work" className="border-b border-stone-200 dark:border-stone-800">
+            <div className="mx-auto max-w-5xl px-6 py-20">
               <AnimateIn>
-                <div className="mb-16">
-                  <h2 className="text-balance font-serif text-4xl font-medium text-foreground">Selected Work</h2>
-                </div>
+                <h2 className="text-xs tracking-[0.25em] uppercase text-amber-800 dark:text-amber-600 mb-14">Selected Work</h2>
               </AnimateIn>
-
-              <StaggerChildren stagger={0.15} className="space-y-16">
+              <StaggerChildren stagger={0.1} className="space-y-0">
                 {content.projects.map((project, i) => (
                   <StaggerItem key={i}>
-                    <div className="grid md:grid-cols-[1fr_2fr] gap-8 md:gap-16">
-                      <div className="space-y-2">
-                        <h3 className="text-2xl font-serif font-medium text-foreground">
+                    <div className="py-10 border-b border-stone-200 dark:border-stone-800 last:border-0 group">
+                      <div className="flex items-start justify-between gap-6 mb-4">
+                        <h3 className="text-2xl font-bold text-stone-900 dark:text-stone-100 tracking-tight group-hover:text-amber-800 dark:group-hover:text-amber-500 transition-colors">
                           {project.title}
                         </h3>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Outcome: <span className="text-foreground">{project.result}</span>
-                        </p>
+                        <span className="text-xs text-stone-400 mt-2 shrink-0 font-mono">{String(i + 1).padStart(2, "0")}</span>
                       </div>
-                      <div>
-                        <p className="text-muted-foreground leading-relaxed text-lg">
-                          {project.description}
-                        </p>
-                      </div>
+                      <p className="text-base text-stone-600 dark:text-stone-400 leading-relaxed max-w-2xl mb-4">{project.description}</p>
+                      {project.result && (
+                        <span className="inline-block text-xs font-medium text-amber-800 dark:text-amber-600 bg-amber-100 dark:bg-amber-950 px-3 py-1.5">
+                          {project.result}
+                        </span>
+                      )}
                     </div>
                   </StaggerItem>
                 ))}
@@ -186,81 +149,35 @@ export function LandingTemplate({ content }: { content: PortfolioContent }) {
           </section>
         )}
 
-        {/* Products */}
         {isSectionVisible(visibleSections, "products") && content.products && content.products.length > 0 && (
-          <section id="products" className="py-24">
-            <div className="mx-auto max-w-5xl px-6">
+          <section id="products" className="border-b border-stone-200 dark:border-stone-800">
+            <div className="mx-auto max-w-5xl px-6 py-20">
               <AnimateIn>
-                <div className="mb-16">
-                  <h2 className="text-balance font-serif text-4xl font-medium text-foreground">Products</h2>
-                </div>
+                <h2 className="text-xs tracking-[0.25em] uppercase text-amber-800 dark:text-amber-600 mb-14">Products</h2>
               </AnimateIn>
-
-              <StaggerChildren stagger={0.1} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {content.products.map((product, i) => (
-                  <StaggerItem key={i}>
-                    <Card className="flex flex-col h-full overflow-hidden bg-background hover:shadow-lg transition-all duration-300">
+                  <AnimateIn key={i} delay={i * 0.07}>
+                    <div className="bg-[#efe9df] dark:bg-stone-900 overflow-hidden group border border-transparent hover:border-stone-300 dark:hover:border-stone-700 transition-colors">
                       {product.image && (
-                        <div className="aspect-[4/3] w-full overflow-hidden bg-muted">
-                          <img
-                            src={product.image}
-                            alt={product.title}
-                            className="object-cover w-full h-full hover:scale-105 transition-transform duration-500"
-                          />
+                        <div className="aspect-[4/3] overflow-hidden">
+                          <img src={product.image} alt={product.title}
+                            className="object-cover w-full h-full grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700" />
                         </div>
                       )}
-                      <div className="p-6 flex flex-col flex-grow">
-                        <div className="flex items-start justify-between gap-4 mb-2">
-                          <h3 className="text-lg font-medium text-foreground">{product.title}</h3>
-                          <span className="text-sm font-medium bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">{product.price}</span>
+                      <div className="p-5">
+                        <div className="flex items-baseline justify-between gap-2 mb-2">
+                          <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">{product.title}</h3>
+                          <span className="text-xs font-bold text-amber-800 dark:text-amber-600 shrink-0">{product.price}</span>
                         </div>
-                        <p className="text-muted-foreground text-sm leading-relaxed mb-6 flex-grow">{product.description}</p>
+                        <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed mb-4">{product.description}</p>
                         {product.url && (
-                          <Button variant="outline" className="w-full mt-auto" asChild>
-                            <a href={product.url} target="_blank" rel="noopener noreferrer">
-                              View Product
-                            </a>
-                          </Button>
+                          <a href={product.url} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-800 dark:text-amber-600 hover:underline">
+                            View <ArrowRightIcon className="size-3" />
+                          </a>
                         )}
                       </div>
-                    </Card>
-                  </StaggerItem>
-                ))}
-              </StaggerChildren>
-            </div>
-          </section>
-        )}
-
-        {/* History */}
-        {isSectionVisible(visibleSections, "history") && content.history && content.history.length > 0 && (
-          <section id="history" className="bg-muted/30 py-24 border-y border-border/50">
-            <div className="mx-auto max-w-5xl px-6">
-              <AnimateIn>
-                <div className="mb-16">
-                  <h2 className="text-balance font-serif text-4xl font-medium text-foreground">Experience</h2>
-                </div>
-              </AnimateIn>
-
-              <div className="space-y-12">
-                {content.history.map((item, i) => (
-                  <AnimateIn key={i} from="bottom" delay={i * 0.1}>
-                    <div className="grid md:grid-cols-[1fr_3fr] gap-6 md:gap-12 pl-4 border-l-2 border-primary/20 hover:border-primary transition-colors">
-                      <div>
-                        <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full whitespace-nowrap">
-                          {item.period}
-                        </span>
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-medium text-foreground mb-1">
-                          {item.role}
-                        </h3>
-                        <p className="text-base text-foreground/80 font-medium mb-4">
-                          {item.company}
-                        </p>
-                        <p className="text-muted-foreground leading-relaxed">
-                          {item.description}
-                        </p>
-                      </div>
                     </div>
                   </AnimateIn>
                 ))}
@@ -269,58 +186,24 @@ export function LandingTemplate({ content }: { content: PortfolioContent }) {
           </section>
         )}
 
-        {/* Testimonials */}
-        {isSectionVisible(visibleSections, "testimonials") && content.testimonials && content.testimonials.length > 0 && (
-          <section id="testimonials" className="py-24">
-            <div className="mx-auto max-w-5xl px-6">
+        {isSectionVisible(visibleSections, "history") && content.history && content.history.length > 0 && (
+          <section id="history" className="border-b border-stone-200 dark:border-stone-800">
+            <div className="mx-auto max-w-5xl px-6 py-20">
               <AnimateIn>
-                <div className="mb-16">
-                  <h2 className="text-balance font-serif text-4xl font-medium text-foreground text-center">Client Feedback</h2>
-                </div>
+                <h2 className="text-xs tracking-[0.25em] uppercase text-amber-800 dark:text-amber-600 mb-14">Experience</h2>
               </AnimateIn>
-
-              <StaggerChildren stagger={0.15} className="grid md:grid-cols-2 gap-8">
-                {content.testimonials.map((t, i) => (
-                  <StaggerItem key={i}>
-                    <Card className="p-8 h-full flex flex-col bg-background/50 hover:bg-background transition-colors shadow-sm">
-                      <svg className="size-8 text-primary/20 mb-6" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-                      </svg>
-                      <p className="text-lg leading-relaxed text-foreground/80 mb-8 flex-grow">"{t.quote}"</p>
-                      <div className="flex items-center gap-4">
-                        <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
-                          {t.author.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-medium text-foreground">{t.author}</p>
-                          {t.role && <p className="text-sm text-muted-foreground">{t.role}</p>}
-                        </div>
+              <div className="relative pl-6 border-l-2 border-amber-200 dark:border-stone-800 space-y-10">
+                {content.history.map((item, i) => (
+                  <AnimateIn key={i} delay={i * 0.08} from="bottom">
+                    <div className="relative">
+                      <div className="absolute -left-[31px] top-1.5 size-4 rounded-full bg-[#f7f3ec] dark:bg-stone-950 border-2 border-amber-600 dark:border-amber-700" />
+                      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mb-2">
+                        <h3 className="text-base font-semibold text-stone-900 dark:text-stone-100">{item.role}</h3>
+                        <span className="text-sm font-medium text-amber-800 dark:text-amber-600">{item.company}</span>
+                        <span className="text-xs text-stone-400 font-mono">{item.period}</span>
                       </div>
-                    </Card>
-                  </StaggerItem>
-                ))}
-              </StaggerChildren>
-            </div>
-          </section>
-        )}
-
-        {/* FAQ */}
-        {isSectionVisible(visibleSections, "faq") && content.faq && content.faq.length > 0 && (
-          <section id="faq" className="bg-muted/30 py-24 border-y border-border/50">
-            <div className="mx-auto max-w-3xl px-6">
-              <AnimateIn>
-                <div className="mb-16 text-center">
-                  <h2 className="text-balance font-serif text-4xl font-medium text-foreground">Frequently Asked Questions</h2>
-                </div>
-              </AnimateIn>
-
-              <div className="space-y-6">
-                {content.faq.map((f, i) => (
-                  <AnimateIn key={i} from="bottom" delay={i * 0.1}>
-                    <Card className="p-6 bg-background">
-                      <h3 className="text-lg font-medium text-foreground mb-3">{f.question}</h3>
-                      <p className="text-muted-foreground leading-relaxed">{f.answer}</p>
-                    </Card>
+                      <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed max-w-2xl">{item.description}</p>
+                    </div>
                   </AnimateIn>
                 ))}
               </div>
@@ -328,28 +211,65 @@ export function LandingTemplate({ content }: { content: PortfolioContent }) {
           </section>
         )}
 
-        {/* Gallery */}
-        {isSectionVisible(visibleSections, "gallery") && content.gallery && content.gallery.length > 0 && (
-          <section id="gallery" className="py-24">
-            <div className="mx-auto max-w-5xl px-6">
+        {isSectionVisible(visibleSections, "testimonials") && content.testimonials && content.testimonials.length > 0 && (
+          <section id="testimonials" className="border-b border-stone-200 dark:border-stone-800 bg-[#efe9df] dark:bg-stone-900">
+            <div className="mx-auto max-w-5xl px-6 py-20">
               <AnimateIn>
-                <div className="mb-16">
-                  <h2 className="text-balance font-serif text-4xl font-medium text-foreground">Gallery</h2>
-                </div>
+                <h2 className="text-xs tracking-[0.25em] uppercase text-amber-800 dark:text-amber-600 mb-14">Kind Words</h2>
               </AnimateIn>
+              <div className="grid md:grid-cols-2 gap-10">
+                {content.testimonials.map((t, i) => (
+                  <AnimateIn key={i} delay={i * 0.1}>
+                    <blockquote className="border-l-2 border-amber-400 dark:border-amber-700 pl-6">
+                      <p className="text-lg font-light italic text-stone-700 dark:text-stone-300 leading-relaxed mb-4">
+                        &ldquo;{t.quote}&rdquo;
+                      </p>
+                      <footer className="text-xs text-stone-500 dark:text-stone-500">
+                        {t.author}{t.role }
+                      </footer>
+                    </blockquote>
+                  </AnimateIn>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
-              <StaggerChildren stagger={0.1} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {isSectionVisible(visibleSections, "faq") && content.faq && content.faq.length > 0 && (
+          <section id="faq" className="border-b border-stone-200 dark:border-stone-800">
+            <div className="mx-auto max-w-5xl px-6 py-20">
+              <AnimateIn>
+                <h2 className="text-xs tracking-[0.25em] uppercase text-amber-800 dark:text-amber-600 mb-14">FAQ</h2>
+              </AnimateIn>
+              <div className="grid md:grid-cols-2 gap-10 max-w-4xl">
+                {content.faq.map((f, i) => (
+                  <AnimateIn key={i} delay={i * 0.07} from="bottom">
+                    <div>
+                      <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100 mb-3">{f.question}</h3>
+                      <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{f.answer}</p>
+                    </div>
+                  </AnimateIn>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {isSectionVisible(visibleSections, "gallery") && content.gallery && content.gallery.length > 0 && (
+          <section id="gallery" className="border-b border-stone-200 dark:border-stone-800">
+            <div className="mx-auto max-w-5xl px-6 py-20">
+              <AnimateIn>
+                <h2 className="text-xs tracking-[0.25em] uppercase text-amber-800 dark:text-amber-600 mb-14">Gallery</h2>
+              </AnimateIn>
+              <StaggerChildren stagger={0.06} className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {content.gallery.map((g, i) => (
                   <StaggerItem key={i}>
-                    <div className="group relative aspect-square overflow-hidden rounded-lg bg-muted">
-                      <img
-                        src={g.url}
-                        alt={g.caption}
-                        className="object-cover w-full h-full transition-transform duration-500 hover:scale-105"
-                      />
+                    <div className="group relative aspect-square overflow-hidden bg-stone-200 dark:bg-stone-800">
+                      <img src={g.url} alt={g.caption}
+                        className="object-cover w-full h-full grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105" />
                       {g.caption && (
-                        <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center p-4 text-center backdrop-blur-sm">
-                          <p className="font-medium text-foreground text-sm">{g.caption}</p>
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-stone-900/70 flex items-end p-3">
+                          <p className="text-[10px] text-stone-300">{g.caption}</p>
                         </div>
                       )}
                     </div>
@@ -360,44 +280,38 @@ export function LandingTemplate({ content }: { content: PortfolioContent }) {
           </section>
         )}
 
-        {/* CTA */}
         {isSectionVisible(visibleSections, "cta") && (
-          <section id="contact" className="py-32">
-            <div className="mx-auto max-w-5xl px-6 text-center">
+          <section id="contact" className="bg-amber-900 dark:bg-amber-950">
+            <div className="mx-auto max-w-5xl px-6 py-24 text-center">
               <AnimateIn>
-                <div className="max-w-2xl mx-auto space-y-8">
-                  <h2 className="text-balance font-serif text-4xl md:text-5xl font-medium text-foreground">
-                    {content.cta.headline}
-                  </h2>
-                  <p className="text-muted-foreground text-xl">
-                    {content.cta.subtext}
-                  </p>
-                  <div className="pt-6">
-                    <Button asChild size="lg" className="h-14 px-10 text-base group">
-                      <a href="#contact">
-                        {content.hero.ctaText}
-                        <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
-                      </a>
-                    </Button>
-                  </div>
-                </div>
+                <h2 className="text-4xl md:text-5xl font-bold text-amber-50 tracking-tight text-balance mb-6">
+                  {content.cta.headline}
+                </h2>
+                <p className="text-amber-200/70 text-lg font-light mb-10 max-w-xl mx-auto">
+                  {content.cta.subtext}
+                </p>
+                <a href="#contact"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-amber-50 text-amber-900 text-sm font-bold hover:bg-white transition-colors">
+                  {content.hero.ctaText}
+                  <ArrowRightIcon className="size-4" />
+                </a>
               </AnimateIn>
             </div>
           </section>
         )}
-
-        <footer className="py-8 border-t border-border/50">
-          <div className="mx-auto max-w-5xl px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-            <p>&copy; {new Date().getFullYear()} {content.hero.headline}</p>
-            <div className="flex items-center gap-6">
-              <SocialLinks socialLinks={content.socialLinks} />
-              <a href="#" className="hover:text-foreground transition-colors">Back to top</a>
-              <ThemeSwitcher />
-            </div>
-          </div>
-        </footer>
       </main>
+
+      <footer className="border-t border-stone-200 dark:border-stone-800 py-7">
+        <div className="mx-auto max-w-5xl px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-stone-400 dark:text-stone-600">
+            &copy; {new Date().getFullYear()} {content.name || content.hero.headline}
+          </p>
+          <div className="flex items-center gap-6">
+            <SocialLinks socialLinks={content.socialLinks} />
+            <ThemeSwitcher />
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
-

@@ -1,4 +1,4 @@
-import { getSession } from "@/auth";
+import { getSession } from "@/lib/auth/server";
 import { redirect } from "next/navigation";
 import { getDashboardData } from "../_lib/get-dashboard-data";
 import { AgentClient } from "./agent-client";
@@ -17,6 +17,7 @@ export default async function AgentPage() {
     <AgentClient
       agent={data?.agent ?? null}
       agentId={data?.agent?.id ?? null}
+      plan={data?.plan ?? "free"}
       portfolioHandle={portfolioHandle}
       hasContent={hasContent}
       isPortfolioPublished={isPortfolioPublished}

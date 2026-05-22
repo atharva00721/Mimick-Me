@@ -1,4 +1,4 @@
-import { getSession } from "@/auth";
+import { getSession } from "@/lib/auth/server";
 
 import { getProfileById } from "@/lib/db";
 import { db } from "@/lib/db";

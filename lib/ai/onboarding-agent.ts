@@ -1,16 +1,20 @@
-// @ts-nocheck
 import { convertToModelMessages, stepCountIs, streamText, tool } from "ai";
 import type { UIMessage } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { onboardingDrafts } from "@/lib/schema";
 import { getPortfolioByHandle } from "@/lib/db/portfolio";
-import { withDefaultSelectedSections, type OnboardingData, type OnboardingStep } from "@/lib/onboarding/types";
+import {
+  withDefaultSelectedSections,
+  ONBOARDING_STEPS,
+  type OnboardingData,
+  type OnboardingStep,
+  type OnboardingSelectedSections,
+} from "@/lib/onboarding/types";
 import {
   validateFinalOnboardingState,
   validateStepInput,
 } from "@/lib/onboarding/validation";
-import { ONBOARDING_STEPS } from "@/lib/onboarding/types";
 import { resolveChatModel } from "./model-provider";
 
 function buildSystemPrompt(
@@ -67,7 +71,7 @@ When they provide a URL, you MUST:
 5. After saving all accessible fields, summarize what you found and ask if it looks right. Then proceed to ask for \`selectedSections\` or \`handle\`.
 `;
 
-  return `You are a friendly, chill onboarding assistant for ref, a portfolio platform. Your job is to collect the following information from the user in this exact order.
+  return `You are a friendly, chill onboarding assistant for Mimick.me, a portfolio platform. Your job is to collect the following information from the user in this exact order.
 
 **Tone & boundaries:**
 - Always be friendly, warm, and chill. Keep it casual and approachable.
@@ -113,7 +117,7 @@ ${stateDesc}
 - If the user's input is invalid, explain what you need and ask again in a friendly way.
 - When required fields for the chosen path are collected and confirmed, call request_preview with the full data. Do NOT call complete_onboarding—the user will confirm via the preview UI.
 - **CRITICAL for request_preview:** Keep your message SHORT. Say ONLY: "Everything look good? Click Confirm below to make it live!" or similar. Do NOT repeat the user's bio, projects, services, or any of their data. The preview card shows it all—your message should be one brief line only.
-- **EDIT REQUESTS:** If the user has already seen the preview and sends a new message (e.g. "shorten the bio", "change title to Senior Developer", "make the tone more friendly"), they want to edit. Parse their request, update the relevant field(s) via save_step with the new value, then call request_preview again with the full updated data. Keep your reply to one short line.`;
+- **EDIT REQUESTS:** If the user has already seen the preview and sends a new message (e.g. "shorten the bio", "change title to Senior Developer", "make the tone more friendly"), they want to edit. Parse their request, update the relevant field(s) via save_step with the new value, then call request_preview again with the full updated data. Keep your reply to one short line.}`;
 }
 
 export async function streamOnboardingChat({
@@ -131,6 +135,7 @@ export async function streamOnboardingChat({
   const modelMessages = await convertToModelMessages(messages);
 
   const modelToUse = resumeText ? "google/gemini-3-flash" : "moonshotai/Kimi-K2.5";
+  console.log(`[onboarding-agent] model=${modelToUse}, hasResumeText=${!!resumeText} (${resumeText?.length ?? 0} chars)`);
 
   const result = streamText({
     model: resolveChatModel(modelToUse),
@@ -151,6 +156,7 @@ export async function streamOnboardingChat({
             "selectedSections",
             "title",
             "bio",
+            "sections",
             "services",
             "projects",
             "siteUrl",
@@ -163,7 +169,7 @@ export async function streamOnboardingChat({
           value: z.union([
             z.string(),
             z.object({
-              hero: z.enum(["on"]),
+              hero: z.union([z.enum(["on"]), z.literal(true)]),
               about: z.boolean(),
               services: z.boolean(),
               projects: z.boolean(),
@@ -182,7 +188,7 @@ export async function streamOnboardingChat({
         execute: async ({ step, value }) => {
           let normalizedValue = value;
           if (step === "selectedSections" && typeof value === "object" && value !== null && "hero" in value) {
-            normalizedValue = { ...value, hero: (value as { hero?: unknown }).hero === "on" ? true : (value as { hero: boolean }).hero };
+            normalizedValue = { ...value, hero: true };
           }
           const stringValue =
             typeof normalizedValue === "string"
@@ -208,9 +214,8 @@ export async function streamOnboardingChat({
           }
 
           const parsedValue = validation.value;
-          // Merge into collected so subsequent save_step calls in the same
-          // turn don't overwrite each other
-          collected[step as keyof OnboardingData] = parsedValue as any;
+          const key = step as keyof OnboardingData;
+          (collected as Record<string, unknown>)[key] = parsedValue;
           const merged = { ...collected };
 
           try {
@@ -242,23 +247,6 @@ export async function streamOnboardingChat({
           name: z.string(),
           title: z.string(),
           bio: z.string(),
-          services: z.array(z.string()),
-          projects: z
-            .array(
-              z.object({
-                title: z.string(),
-                description: z.string(),
-              })
-            )
-            .optional(),
-          selectedSections: z.object({
-            hero: z.enum(["on"]),
-            about: z.boolean(),
-            services: z.boolean(),
-            projects: z.boolean(),
-            cta: z.boolean(),
-            socials: z.boolean(),
-          }).optional(),
           services: z.array(z.string()).optional(),
           projects: z.array(
             z.object({
@@ -266,6 +254,14 @@ export async function streamOnboardingChat({
               description: z.string(),
             })
           ).optional(),
+          selectedSections: z.object({
+            hero: z.union([z.enum(["on"]), z.literal(true)]),
+            about: z.boolean(),
+            services: z.boolean(),
+            projects: z.boolean(),
+            cta: z.boolean(),
+            socials: z.boolean(),
+          }).optional(),
           setupPath: z.enum(["existing-site", "build-new"]),
           siteUrl: z.string().optional(),
           targetAudience: z.string().optional(),
@@ -275,11 +271,20 @@ export async function streamOnboardingChat({
           handle: z.string(),
         }),
         execute: async (data) => {
-          if (data.selectedSections && (data.selectedSections as { hero?: unknown }).hero === "on") {
-            data = { ...data, selectedSections: { ...data.selectedSections!, hero: true as const } };
+          let finalData = data;
+          if (data.selectedSections && data.selectedSections.hero === "on") {
+            finalData = {
+              ...data,
+              selectedSections: {
+                ...data.selectedSections,
+                hero: true as const,
+              },
+            };
           }
-          console.log("[request_preview] execute called with:", data);
-          const parsed = validateFinalOnboardingState(data);
+          console.log("[request_preview] execute called with:", finalData);
+          const parsed = validateFinalOnboardingState(
+            finalData as unknown as OnboardingData
+          );
           if (!parsed.ok) {
             console.error(
               "[request_preview] validation failed:",

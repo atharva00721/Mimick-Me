@@ -37,6 +37,9 @@ export interface GenerateAgentReplyInput {
   portfolio?: PortfolioContent | null;
   /** Pre-fetched Google Calendar access token — avoids a DB round-trip inside the tool loop */
   calendarAccessToken?: string | null;
+  calendlyEnabled?: boolean;
+  calendlyAccountEmail?: string | null;
+  calendlySchedulingUrl?: string | null;
   workingHours?: { dayOfWeek: number; startTime: string; endTime: string; enabled: boolean }[] | null;
   offDays?: string[] | null;
 }

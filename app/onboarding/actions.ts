@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { getSession } from "@/auth";
+import { getSession } from "@/lib/auth/server";
 import {
   createPortfolio,
   getPortfolioByHandle,

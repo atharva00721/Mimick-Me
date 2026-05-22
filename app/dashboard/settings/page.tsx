@@ -1,4 +1,4 @@
-import { getSession } from "@/auth";
+import { getSession } from "@/lib/auth/server";
 import { redirect } from "next/navigation";
 import { getDashboardData } from "../_lib/get-dashboard-data";
 import { SettingsClient } from "./settings-client";
@@ -20,6 +20,7 @@ export default async function SettingsPage() {
       user={{
         email: session.user.email || "",
         name: profile?.name || session.user.name || "",
+        image: profile?.image || null,
         plan: profile?.plan || "free",
         credits: profile?.credits ?? 0,
       }}

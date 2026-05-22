@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/auth";
+import { getSession } from "@/lib/auth/server";
 
 export async function POST(request: Request) {
     const session = await getSession();

@@ -2,6 +2,7 @@ import { and, desc, eq, gte, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { agentLeads } from "@/lib/schema";
 import { linkMessagesToLead } from "./lead-chats";
+import { checkLeadCaptureLimit } from "@/lib/billing";
 
 export interface SaveLeadInput {
   agentId: string;
@@ -16,6 +17,7 @@ export interface SaveLeadInput {
   confidence: number;
   sessionId: string;
   captureTurn?: number | null;
+  ownerUserId?: string | null;
 }
 
 export interface ExistingLead {
@@ -30,6 +32,7 @@ export interface ExistingLead {
   confidence: number;
   sessionId: string | null;
   captureTurn: number | null;
+  notificationSent: boolean;
 }
 
 export function normalizeEmail(email: string | null | undefined): string {
@@ -97,6 +100,7 @@ async function findExistingLead(agentId: string, lookup: LeadLookupKey): Promise
       confidence: agentLeads.confidence,
       sessionId: agentLeads.sessionId,
       captureTurn: agentLeads.captureTurn,
+      notificationSent: agentLeads.notificationSent,
     })
     .from(agentLeads)
     .where(
@@ -151,17 +155,36 @@ export async function saveLeadWithDedup(input: SaveLeadInput): Promise<"inserted
       merged.captureTurn !== existing.captureTurn;
 
     if (hasChanges || existing.sessionId !== input.sessionId) {
+      const isNewSession = existing.sessionId !== input.sessionId;
       await db
         .update(agentLeads)
-        .set({ ...merged, sessionId: input.sessionId })
+        .set({
+          ...merged,
+          sessionId: input.sessionId,
+          updatedAt: new Date(),
+          // Reset notification state when a lead is re-captured in a new chat session.
+          // Without this, deduped leads can remain permanently "sent" and skip future emails.
+          notificationSent: isNewSession ? false : existing.notificationSent,
+        })
         .where(eq(agentLeads.id, existing.id));
       await linkMessagesToLead(existing.id, input.sessionId);
       return "updated";
     }
 
+    await db
+      .update(agentLeads)
+      .set({ updatedAt: new Date() })
+      .where(eq(agentLeads.id, existing.id));
     await linkMessagesToLead(existing.id, input.sessionId);
 
     return "updated";
+  }
+
+  if (input.ownerUserId) {
+    const leadLimit = await checkLeadCaptureLimit(input.ownerUserId);
+    if (!leadLimit.allowed) {
+      return "skipped";
+    }
   }
 
   const leadId = crypto.randomUUID();
@@ -179,6 +202,7 @@ export async function saveLeadWithDedup(input: SaveLeadInput): Promise<"inserted
     confidence: input.confidence,
     sessionId: input.sessionId,
     captureTurn: input.captureTurn ?? null,
+    updatedAt: new Date(),
   });
 
   await linkMessagesToLead(leadId, input.sessionId);

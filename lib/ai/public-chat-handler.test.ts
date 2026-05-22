@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { hasSufficientLeadFields, parseLeadChannelsFromText } from "@/lib/ai/public-chat-handler";
+import { hasSufficientLeadFields, parseLeadChannelsFromText } from "@/lib/ai/public-chat/lead-parsing";
 
 describe("lead persistence guardrails", () => {
   it("suppresses consultative false positives without viable contact or details", () => {

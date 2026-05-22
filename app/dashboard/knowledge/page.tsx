@@ -1,4 +1,4 @@
-import { getSession } from "@/auth";
+import { getSession } from "@/lib/auth/server";
 import { redirect } from "next/navigation";
 import { KnowledgeClient } from "./knowledge-client";
 

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Settings, LogOut, Moon, Sun } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signOut } from "@/auth-client";
+import { signOut } from "@/lib/auth/client";
 import { useTheme } from "next-themes";
 import { useState } from "react";
 

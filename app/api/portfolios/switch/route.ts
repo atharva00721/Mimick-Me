@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/auth";
+import { getSession } from "@/lib/auth/server";
 import { ACTIVE_PORTFOLIO_COOKIE } from "@/lib/active-portfolio";
 import { getPortfolioByIdAndUserId } from "@/lib/db/portfolio";
 

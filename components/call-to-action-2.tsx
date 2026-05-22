@@ -11,8 +11,8 @@ export default function CallToAction() {
                     variant="outline"
                     className="p-8 md:p-12">
                     <div className="text-muted-foreground mb-6 text-sm font-medium">Limited Time Offer</div>
-                    <h2 className="text-balance font-serif text-3xl font-medium md:text-4xl">Start Building Today</h2>
-                    <p className="text-muted-foreground mt-4 max-w-md text-balance">Get 3 months free when you sign up for an annual plan. No credit card required to start.</p>
+                    <h2 className="text-balance font-serif text-3xl md:text-4xl">Start Building Today</h2>
+                    {/* <p className="text-muted-foreground mt-4 max-w-md text-balance">Get 3 months free when you sign up for an annual plan. No credit card required to start.</p> */}
                     <Button
                         asChild
                         className="mt-8 gap-2">

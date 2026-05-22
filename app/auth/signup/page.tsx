@@ -1,7 +1,7 @@
 "use client"
 
 
-import { authClient } from "@/auth-client"
+import { authClient } from "@/lib/auth/client"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -24,7 +24,7 @@ export default function SignUpPage() {
           aria-label="go home"
           className="inline-block border-t-2 border-transparent py-3"
         >
-          REF
+          Mimick.me
         </Link>
       </div>
 

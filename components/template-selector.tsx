@@ -38,6 +38,8 @@ export function TemplateSelector() {
           <SelectItem value="gallery">Gallery</SelectItem>
           <SelectItem value="minimal">Minimal</SelectItem>
           <SelectItem value="interactive">Interactive</SelectItem>
+          <SelectItem value="studio">Studio</SelectItem>
+          <SelectItem value="personal">Personal</SelectItem>
         </SelectContent>
       </Select>
     </div>

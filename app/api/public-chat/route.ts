@@ -3,6 +3,16 @@ import { handlePublicChat } from "@/lib/ai/public-chat-handler";
 import { parsePublicChatRequest } from "@/lib/validation/public-chat";
 import { requireUserId } from "@/lib/api/route-helpers";
 
+function normalizeOrigin(value: string | null): string | null {
+  if (!value) return null;
+
+  try {
+    return new URL(value).origin;
+  } catch {
+    return value.trim().replace(/\/+$/, "");
+  }
+}
+
 function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
@@ -12,8 +22,8 @@ function getClientIp(request: Request): string {
 }
 
 function getCorsHeaders(request: Request): Record<string, string> {
-  const origin = request.headers.get("origin");
-  const appOrigin = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  const origin = normalizeOrigin(request.headers.get("origin"));
+  const appOrigin = normalizeOrigin(process.env.NEXT_PUBLIC_APP_URL?.trim() ?? null);
 
   if (!origin || !appOrigin || origin !== appOrigin) {
     return {};

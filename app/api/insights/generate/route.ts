@@ -3,8 +3,17 @@ import { chatMessages, chatSessions, conversionInsights } from "@/lib/schema";
 import { eq, gte, and, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { generateConversionInsights } from "@/lib/ai/conversion-insights";
+import { consumeCredits, getCredits } from "@/lib/credits";
+import { requireUserId } from "@/lib/api/route-helpers";
+
+const CREDIT_COST = 1;
 
 export async function POST(req: Request) {
+    const authResult = await requireUserId();
+    if (!authResult.ok) {
+        return authResult.response;
+    }
+
     try {
         const body = await req.json();
         const { portfolioId } = body;
@@ -62,16 +71,26 @@ export async function POST(req: Request) {
         }, {} as Record<string, string[]>);
 
         let formattedLogs = "";
-        Object.entries(logsBySession).forEach(([sessionId, msgs], index) => {
+        Object.entries(logsBySession).forEach(([, msgs], index) => {
             formattedLogs += `--- Session ${index + 1} ---\n`;
             formattedLogs += msgs.join('\n') + '\n\n';
         });
+
+        const currentCredits = await getCredits(authResult.userId);
+        if (currentCredits < CREDIT_COST) {
+            return NextResponse.json({ error: "Not enough credits" }, { status: 402 });
+        }
 
         // Generate insights
         const startTime = Date.now();
         const insights = await generateConversionInsights(formattedLogs);
         const latencyMs = Date.now() - startTime;
         console.log(`Generated conversion insights in ${latencyMs}ms for portfolio ${portfolioId}`);
+
+        const creditsConsumed = await consumeCredits(authResult.userId, CREDIT_COST);
+        if (!creditsConsumed) {
+            return NextResponse.json({ error: "Not enough credits" }, { status: 402 });
+        }
 
         // Save to database
         const [inserted] = await db.insert(conversionInsights)
@@ -84,8 +103,9 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ success: true, insight: inserted, latencyMs });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Failed to generate insights:", error);
-        return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
+        const details = error instanceof Error ? error.message : "Unknown error";
+        return NextResponse.json({ error: "Internal Server Error", details }, { status: 500 });
     }
 }
